@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">TEST</string>
+    <string name="title_section1">面板</string>
+    <string name="title_section2">行程</string>
+    <string name="title_section3">车况</string>
+    <string name="title_section4">服务</string>
+    <string name="title_section5">设置</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_example">Example action</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_device_state">DeviceState</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="Scan_str1">扫描附近设备</string>
+    <string name="title_activity_device_control">DeviceControl</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="title_activity_default_device_set">DefaultDeviceSet</string>
+
+</resources>
