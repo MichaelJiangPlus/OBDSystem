@@ -1,8 +1,5 @@
 package com.example.michael.origintest;
 
-import android.content.SharedPreferences;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
