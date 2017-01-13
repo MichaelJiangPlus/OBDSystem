@@ -6,7 +6,7 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context="com.example.michael.origintest.DeviceControl">
+    tools:context="com.michael.obdsystem.DeviceControl">
 
     <LinearLayout
         android:id="@+id/ctrl_ll_1"
@@ -36,35 +36,11 @@
         android:layout_below="@id/ctrl_ll_1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
 
 
-        <Button
-            android:id="@+id/ctrl_btn3"
-            android:text="ATE0"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/ctrl_btn4"
-            android:text="ATDPN"/>
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/ctrl_btn5"
-            android:text="ATSP00"/>
-        <Button
-            android:id="@+id/ctrl_btn6"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0101"/>
-        <Button
-            android:id="@+id/ctrl_btn7"
-            android:text="03"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        </LinearLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/ctrl_ll_2"
@@ -82,66 +58,190 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <ToggleButton
-            android:id="@+id/ctrl_btn1"
+            android:id="@+id/connectBtn"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:checked="false" />
+
         <Button
-            android:id="@+id/ctrl_btn2"
-            android:text="0100"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <Button
-            android:id="@+id/ctrl_btn_clear"
+            android:id="@+id/btnClear"
             android:text="clear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/ctrl_ll_3"
-        android:layout_below="@id/ctrl_ll_2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp">
-
-        <ExpandableListView
-            android:id="@+id/ctrl_lv1"
-            android:layout_width="wrap_content"
-            android:layout_height="67dp">
-
-            </ExpandableListView>
-        </LinearLayout>
     <RelativeLayout
         android:id="@+id/ctrl_rl_1"
-        android:layout_below="@id/ctrl_ll_3"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_below="@id/ctrl_ll_2">
         <TextView
             android:id="@+id/ctrl_txt5"
             android:text="接收数据："
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
+
         <TextView
-            android:id="@+id/ctrl_txtData"
-            android:layout_below="@id/ctrl_txt5"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <EditText
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/editText"
-            android:layout_alignBottom="@+id/ctrl_txtData"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="车辆速度"
+            android:id="@+id/txt"
+            android:layout_marginStart="28dp"
+            android:layout_below="@+id/ctrl_txt5"
             android:layout_alignParentStart="true"
-            android:layout_toStartOf="@+id/button" />
+            android:layout_marginTop="15dp" />
 
-        <Button
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Send"
-            android:id="@+id/button"
-            android:layout_alignBottom="@+id/ctrl_txtData"
-            android:layout_alignParentEnd="true" />
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="引擎转速"
+            android:id="@+id/textView"
+            android:layout_marginTop="20dp"
+            android:layout_below="@+id/txt"
+            android:layout_alignStart="@+id/txt" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="剩余油量"
+            android:id="@+id/textView2"
+            android:layout_marginTop="20dp"
+            android:layout_below="@+id/textView"
+            android:layout_alignStart="@+id/textView" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="引擎油温"
+            android:id="@+id/textView3"
+            android:layout_below="@+id/textView2"
+            android:layout_alignStart="@+id/textView2"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="油量消耗"
+            android:id="@+id/textView4"
+            android:layout_below="@+id/textView3"
+            android:layout_alignStart="@+id/textView3"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="油箱温度"
+            android:id="@+id/textView5"
+            android:layout_below="@+id/textView4"
+            android:layout_alignStart="@+id/textView4"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="冷却液温度"
+
+            android:layout_below="@+id/textView5"
+            android:layout_alignStart="@+id/textView5"
+            android:layout_marginTop="20dp"
+            android:id="@+id/textView7" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_speed"
+            android:layout_marginStart="60dp"
+            android:layout_alignTop="@+id/txt"
+            android:layout_toEndOf="@+id/textView7" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_EngineTurn"
+            android:layout_alignTop="@+id/textView"
+            android:layout_alignStart="@+id/txt_speed" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_OilSurplus"
+            android:layout_alignTop="@+id/textView2"
+            android:layout_alignStart="@+id/txt_EngineTurn" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_EnginTemperature"
+            android:layout_alignTop="@+id/textView3"
+            android:layout_alignStart="@+id/txt_OilSurplus" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_OilUse"
+            android:layout_alignTop="@+id/textView4"
+            android:layout_alignStart="@+id/txt_EnginTemperature" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_TankTemperature"
+            android:layout_alignTop="@+id/textView5"
+            android:layout_alignStart="@+id/txt_OilUse" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="N/A"
+            android:id="@+id/txt_CoolantTemperature"
+            android:layout_alignTop="@+id/textView7"
+            android:layout_alignStart="@+id/txt_TankTemperature" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:id="@+id/data"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true" />
+
+
     </RelativeLayout>
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/editText"
+        android:layout_below="@+id/ctrl_ll_1"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/button" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send"
+        android:id="@+id/button"
+        android:layout_alignBottom="@+id/editText"
+        android:layout_alignParentEnd="true" />
 
 </RelativeLayout>

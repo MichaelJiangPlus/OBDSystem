@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <string name="app_name">TEST</string>
+    <string name="app_name">OBDSystem</string>
     <string name="title_section1">面板</string>
     <string name="title_section2">行程</string>
     <string name="title_section3">车况</string>
@@ -18,5 +16,4 @@
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>
     <string name="title_activity_default_device_set">DefaultDeviceSet</string>
-
 </resources>
