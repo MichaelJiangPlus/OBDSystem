@@ -32,8 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 
 public class DeviceControl extends Activity {
-
-
     private final static String TAG = DeviceControl.class.getSimpleName();
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
@@ -47,14 +45,12 @@ public class DeviceControl extends Activity {
     private Button Clear;
     private Button send;
     private EditText editText;
-
     private TextView mDataField;
     private BluetoothLeService mBluetoothLeService;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
-
     private BluetoothGattCharacteristic mWriteCharacteristic;
     private String mDeviceName;
     private String mDeviceAddress;
@@ -66,7 +62,6 @@ public class DeviceControl extends Activity {
     public static DeviceControl getDeviceControl() {
         return deviceControl;
     }
-
     private TextView txt_speed;
     private TextView txt_EngineTurn;
     private TextView txt_OilSurplus;
@@ -76,7 +71,7 @@ public class DeviceControl extends Activity {
     private TextView txt_CoolantTemperature;
     private DataAnalysed dataAnalysed;
     private OBDCProtocol obdcProtocol;
-//    private Timestamp start;
+    //    private Timestamp start;
 //    private Timestamp now;
     private void init() {
         this.send = (Button) findViewById(R.id.button);
@@ -230,6 +225,75 @@ public class DeviceControl extends Activity {
     };
 
 
+    ////////////////////////////////////////////////////////////////////////////////////
+//    private final ExpandableListView.OnChildClickListener servicesListClickListner =
+//            new ExpandableListView.OnChildClickListener(){
+//                @Override
+//                public boolean onChildClick(ExpandableListView parent, View v, int groupPosition,
+//                                            int childPosition, long id) {
+//                    final EditText etHex;
+//                    final EditText etStr;
+//
+//                    etHex=new EditText(parent.getContext());
+//                    etStr=new EditText(parent.getContext());
+//
+//                    etHex.setSingleLine();
+//                    etStr.setSingleLine();
+//                    if (mGattCharacteristics != null) {
+//                        //final BluetoothGattCharacteristic
+//                        mWriteCharacteristic =mGattCharacteristics.get(groupPosition).get(childPosition);
+//                        final int charaProp = mWriteCharacteristic.getProperties();
+//                        //如果该特性可写
+//                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_WRITE) > 0)
+//                        {
+//                            LayoutInflater factory = LayoutInflater.from(parent.getContext());
+//                            final View textEntryView = factory.inflate(R.layout.dialog, null);
+//                            final EditText editTextName = (EditText) textEntryView.findViewById(R.id.editTextName);
+//                            final EditText editTextNumEditText = (EditText)textEntryView.findViewById(R.id.editTextNum);
+//                            AlertDialog.Builder ad1 = new AlertDialog.Builder(parent.getContext());
+//                            ad1.setTitle("写特性");
+//                            ad1.setView(textEntryView);
+//                            ad1.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+//                                public void onClick(DialogInterface dialog, int i) {
+//                                    byte[] value = new byte[20];
+//                                    value[0] = (byte) 0x00;
+//                                    if(editTextName.getText().length() > 0){
+//                                        //write string
+//
+//                                        WriteBytes= editTextName.getText().toString().getBytes();
+//                                    }else if(editTextNumEditText.getText().length() > 0){
+//                                        try {
+//                                            WriteBytes = hex2byte(editTextNumEditText.getText().toString().getBytes());
+//                                        }catch (Exception e)
+//                                        {Toast.makeText(DeviceControl.this,"长度不为偶数",Toast.LENGTH_SHORT).show();}
+//                                    }
+//                                    mWriteCharacteristic.setValue(value[0], BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+//                                    mWriteCharacteristic.setValue(WriteBytes);
+//
+//                                    mBluetoothLeService.writeCharacteristic(mWriteCharacteristic);
+//                                }
+//                            });
+//                            ad1.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+//                                public void onClick(DialogInterface dialog, int i) {
+//
+//                                }
+//                            });
+//                            ad1.show();
+//
+//                        }
+//                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+//                            mNotifyCharacteristic = mWriteCharacteristic;
+//                            mBluetoothLeService.setCharacteristicNotification(
+//                                    mWriteCharacteristic, true);
+//                        }
+//                        return true;
+//                    }
+//                    return false;
+//                }
+//            };
+
+////////////////////////////////////////////////////////////////////////////////////
+
     /////////////////////////////////////////////////////////////////////////////////////
     //他是通过BroadcastReceiver获取的信息
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
@@ -267,10 +331,10 @@ public class DeviceControl extends Activity {
         if (data != null) {
             byte[][] result;
             result = dataAnalysed.analysisDate(data);
-            String command=new String(result[1]);//命令位
+            String command=new String (result[1]);//命令位
             int a=dataAnalysed.hexTodec(result[2]);//A
             int b=dataAnalysed.hexTodec(result[3]);//B
-            DecimalFormat df   = new DecimalFormat("######0.00");
+            DecimalFormat    df   = new DecimalFormat("######0.00");
             double temp=obdcProtocol.Mode01_calculate(command,a,b,0);
             String sum=df.format(temp);
             switch (command){
