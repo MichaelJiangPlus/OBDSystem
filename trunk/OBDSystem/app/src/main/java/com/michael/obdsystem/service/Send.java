@@ -9,6 +9,7 @@ import com.michael.obdsystem.DeviceControl;
 /**
  * Created by Michael on 2016/7/22 0022.
  */
+
 public class Send extends AsyncTask<String, Integer, String> {
     private TextView textView;
     private DeviceControl deviceControl;

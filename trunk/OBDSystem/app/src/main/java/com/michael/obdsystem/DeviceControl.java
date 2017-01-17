@@ -11,7 +11,9 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -22,30 +24,44 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.michael.obdsystem.service.BluetoothLeService;
+import com.michael.obdsystem.service.MqttInstance;
 import com.michael.obdsystem.service.Send;
 import com.michael.obdsystem.util.DataAnalysed;
 import com.michael.obdsystem.util.OBDCProtocol;
+
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class DeviceControl extends Activity {
-    private final static String TAG = DeviceControl.class.getSimpleName();
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-    private static DeviceControl deviceControl = null;
-    private SharedPreferences loadmDevice=getSharedPreferences("data",MODE_PRIVATE);
-    private int i = 1;
-    //控件
+public class DeviceControl extends Activity implements View.OnClickListener {
+    private Button Clear;
+    private Button send;
+    private Button link;
+    private EditText editText;
+    private ToggleButton connectBtn;
     private TextView dev_name;
     private TextView dev_addr;
     private TextView dev_connection;
-    private Button Clear;
-    private Button send;
-    private EditText editText;
     private TextView mDataField;
+    private TextView txt_speed;
+    private TextView txt_EngineTurn;
+    private TextView txt_OilSurplus;
+    private TextView txt_EnginTemperature;
+    private TextView txt_OilUse;
+    private TextView txt_TankTemperature;
+    private TextView txt_CoolantTemperature;
+
+    /*****自定义类*****/
+    private DataAnalysed dataAnalysed;
+    private OBDCProtocol obdcProtocol;
+
+    /*****蓝牙部分*****/
     private BluetoothLeService mBluetoothLeService;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
@@ -56,32 +72,56 @@ public class DeviceControl extends Activity {
     private String mDeviceAddress;
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+
+    /*****MQTT*****/
+    private MqttAsyncClient instance=null;
+    private Handler handler;
+    private Thread mqttlink;
+
+    /*****常用变量*****/
+    private final static int CONNECT=1;
+    private final static int FAIL=0;
+    private final static int SUCCESS=1;
+    private final static String TAG = DeviceControl.class.getSimpleName();
+    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
+    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+    private static DeviceControl deviceControl = null;
+
+    /*****自定义全局变量*****/
+    private int i = 1;
     byte[] WriteBytes = new byte[20];
-    private ToggleButton connectBtn;
+
+
 
     public static DeviceControl getDeviceControl() {
         return deviceControl;
     }
-    private TextView txt_speed;
-    private TextView txt_EngineTurn;
-    private TextView txt_OilSurplus;
-    private TextView txt_EnginTemperature;
-    private TextView txt_OilUse;
-    private TextView txt_TankTemperature;
-    private TextView txt_CoolantTemperature;
-    private DataAnalysed dataAnalysed;
-    private OBDCProtocol obdcProtocol;
-    //    private Timestamp start;
-//    private Timestamp now;
+
+
+
     private void init() {
+        /*****声明自定义类*****/
+        dataAnalysed=new DataAnalysed();
+        obdcProtocol=new OBDCProtocol();
+        deviceControl=this;
+
+        /*****声明控件*****/
         this.send = (Button) findViewById(R.id.button);
+        this.send.setOnClickListener(this);
+        this.Clear = (Button) findViewById(R.id.btnClear);
+        this.Clear.setOnClickListener(this);
+        this.link=(Button)findViewById(R.id.btn_link);
+        link.setOnClickListener(this);
+        this.connectBtn = (ToggleButton) findViewById(R.id.connectBtn);
+        this.connectBtn.setOnClickListener(this);
+
         this.editText = (EditText) findViewById(R.id.editText);
         this.dev_name = (TextView) findViewById(R.id.ctrl_txt2);
         this.dev_addr = (TextView) findViewById(R.id.ctrl_txt21);
         this.dev_connection = (TextView) findViewById(R.id.ctrl_txt4);
         this.mDataField = (TextView) findViewById(R.id.data);
-        this.Clear = (Button) findViewById(R.id.btnClear);
-        this.connectBtn = (ToggleButton) findViewById(R.id.connectBtn);
+
+
         this.txt_speed = (TextView) findViewById(R.id.txt_speed);
         this.txt_EngineTurn = (TextView) findViewById(R.id.txt_EngineTurn);
         this.txt_OilSurplus = (TextView) findViewById(R.id.txt_OilSurplus);
@@ -89,55 +129,53 @@ public class DeviceControl extends Activity {
         this.txt_OilUse = (TextView) findViewById(R.id.txt_OilUse);
         this.txt_TankTemperature = (TextView) findViewById(R.id.txt_TankTemperature);
         this.txt_CoolantTemperature = (TextView) findViewById(R.id.txt_CoolantTemperature);
-        dataAnalysed=new DataAnalysed();
-        obdcProtocol=new OBDCProtocol();
-        deviceControl=this;
-    }
 
-    private void btnSetting(){
-        connectBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ToggleButton toggleButton = (ToggleButton) view;
-                if (!toggleButton.isChecked())//连接开启时check为false
-                {
-                    //连接目标设备
-                    try {
-                        mBluetoothLeService.connect(mDeviceAddress);
-                        dev_connection.setText("Connected");
-                    } catch (Exception e) {
-                        Log.d(TAG, e.getMessage());
-                    }
-                } else {
-                    //关闭设备连接
-                    mBluetoothLeService.disconnect();
-                    dev_connection.setText("Disconnected");
+        mqttlink=  new Thread(){
+            public void run(){
+                instance= MqttInstance.getInstance("iot.eclipse.org:1883","","");
+                try {
+                    instance.connect(MqttInstance.getOptions(),null,mqttActionListener);
+                } catch (MqttException e) {
+                    Log.d("TAGERRor",e.toString());
+                    e.printStackTrace();
+                    Toast.makeText(deviceControl,"Fail...",Toast.LENGTH_LONG);
+                    editText.setText("Fail");
                 }
             }
-        });
-
-
-        this.send.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String result = editText.getText().toString();
-                result = result + '\r';
-                sendString(result);
-                Send send=new Send(deviceControl);
-//                start=new Timestamp(currentTimeMillis());
-//                now=new Timestamp(currentTimeMillis());
-                send.execute();
-            }
-        });
-
-        this.Clear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-            }
-        });
-
+        };
+        mqttlink.start();
     }
+
+    private IMqttActionListener mqttActionListener=new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken asyncActionToken) {
+            Message msg=new Message();
+            msg.what=CONNECT;
+            msg.arg1=SUCCESS;
+            handler.sendMessage(msg);
+        }
+        @Override
+        public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+            Message msg=new Message();
+            msg.what=CONNECT;
+            msg.arg1=FAIL;
+            handler.sendMessage(msg);
+        }
+    };
+
+
+    public void sendOrder(String Topic, String order){
+        if(MqttInstance.getInstance().isConnected()){
+            try {
+                MqttInstance.getInstance().publish(Topic,order.getBytes(),2,false);
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,30 +185,35 @@ public class DeviceControl extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_control);
         init();
-        btnSetting();
-//        final Intent intent = getIntent();
-//        mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-//        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        /*****获取要连接的蓝牙名称和地址*****/
+        final Intent intent = getIntent();
+        mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
+        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
-        mDeviceName=loadmDevice.getString(EXTRAS_DEVICE_NAME,"");
-        mDeviceAddress=loadmDevice.getString(EXTRAS_DEVICE_ADDRESS,"");
-        if(mDeviceName.equals("")){
-
-        }
 
         // Sets up UI references.
         dev_name.setText(mDeviceName);
         dev_addr.setText(mDeviceAddress);
 
 
-        //getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
         this.dev_connection.setText("自动连接设备中");
 
 
-
-
+        handler=new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                if(msg.what==CONNECT){
+                    if(msg.arg1==SUCCESS){
+                        Toast.makeText(DeviceControl.this,"Success",Toast.LENGTH_SHORT).show();
+                    }else{
+                        Toast.makeText(DeviceControl.this,"Fail",Toast.LENGTH_SHORT).show();
+                    }
+                }
+                super.handleMessage(msg);
+            }
+        };
 
     }
 
@@ -200,102 +243,8 @@ public class DeviceControl extends Activity {
     }
 
 
-    /////////////////////////////////////////////////////////////////////////////////////////
-    //蓝牙连接
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
-            if (!mBluetoothLeService.initialize()) {
-                //Log.e(TAG, "Unable to initialize Bluetooth");
-                Toast.makeText(DeviceControl.this, "无法初始化蓝牙设备", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-            // Automatically connects to the device upon successful start-up initialization.
-            mBluetoothLeService.connect(mDeviceAddress);
-            //自动连接到目标设备
-//            connectBtn.setChecked(false);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothLeService = null;
-        }
-    };
-
-
-    ////////////////////////////////////////////////////////////////////////////////////
-//    private final ExpandableListView.OnChildClickListener servicesListClickListner =
-//            new ExpandableListView.OnChildClickListener(){
-//                @Override
-//                public boolean onChildClick(ExpandableListView parent, View v, int groupPosition,
-//                                            int childPosition, long id) {
-//                    final EditText etHex;
-//                    final EditText etStr;
-//
-//                    etHex=new EditText(parent.getContext());
-//                    etStr=new EditText(parent.getContext());
-//
-//                    etHex.setSingleLine();
-//                    etStr.setSingleLine();
-//                    if (mGattCharacteristics != null) {
-//                        //final BluetoothGattCharacteristic
-//                        mWriteCharacteristic =mGattCharacteristics.get(groupPosition).get(childPosition);
-//                        final int charaProp = mWriteCharacteristic.getProperties();
-//                        //如果该特性可写
-//                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_WRITE) > 0)
-//                        {
-//                            LayoutInflater factory = LayoutInflater.from(parent.getContext());
-//                            final View textEntryView = factory.inflate(R.layout.dialog, null);
-//                            final EditText editTextName = (EditText) textEntryView.findViewById(R.id.editTextName);
-//                            final EditText editTextNumEditText = (EditText)textEntryView.findViewById(R.id.editTextNum);
-//                            AlertDialog.Builder ad1 = new AlertDialog.Builder(parent.getContext());
-//                            ad1.setTitle("写特性");
-//                            ad1.setView(textEntryView);
-//                            ad1.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-//                                public void onClick(DialogInterface dialog, int i) {
-//                                    byte[] value = new byte[20];
-//                                    value[0] = (byte) 0x00;
-//                                    if(editTextName.getText().length() > 0){
-//                                        //write string
-//
-//                                        WriteBytes= editTextName.getText().toString().getBytes();
-//                                    }else if(editTextNumEditText.getText().length() > 0){
-//                                        try {
-//                                            WriteBytes = hex2byte(editTextNumEditText.getText().toString().getBytes());
-//                                        }catch (Exception e)
-//                                        {Toast.makeText(DeviceControl.this,"长度不为偶数",Toast.LENGTH_SHORT).show();}
-//                                    }
-//                                    mWriteCharacteristic.setValue(value[0], BluetoothGattCharacteristic.FORMAT_UINT8, 0);
-//                                    mWriteCharacteristic.setValue(WriteBytes);
-//
-//                                    mBluetoothLeService.writeCharacteristic(mWriteCharacteristic);
-//                                }
-//                            });
-//                            ad1.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-//                                public void onClick(DialogInterface dialog, int i) {
-//
-//                                }
-//                            });
-//                            ad1.show();
-//
-//                        }
-//                        if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-//                            mNotifyCharacteristic = mWriteCharacteristic;
-//                            mBluetoothLeService.setCharacteristicNotification(
-//                                    mWriteCharacteristic, true);
-//                        }
-//                        return true;
-//                    }
-//                    return false;
-//                }
-//            };
-
-////////////////////////////////////////////////////////////////////////////////////
-
-    /////////////////////////////////////////////////////////////////////////////////////
-    //他是通过BroadcastReceiver获取的信息
+    //通过BroadcastReceiver获取的信息
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -339,35 +288,38 @@ public class DeviceControl extends Activity {
             String sum=df.format(temp);
             switch (command){
                 case "05":{
-//                    now.setTime(currentTimeMillis());
-//                    long time=now.getTime()-start.getTime();
-//                    mDataField.setText(String.valueOf(time));
-//                    start.setTime(currentTimeMillis());
                     txt_CoolantTemperature.setText(sum+"°C");
+                    deviceControl.sendOrder("0105",String.valueOf(sum));
                     break;
                 }
                 case "0C":{
                     txt_EngineTurn.setText(sum+"rpm");
+                    deviceControl.sendOrder("010C",String.valueOf(sum));
                     break;
                 }
                 case "0D":{
                     txt_speed.setText(sum+"Km/h");
+                    deviceControl.sendOrder("010D",String.valueOf(sum));
                     break;
                 }
                 case "0F":{
                     txt_TankTemperature.setText(sum+"°C");
+                    deviceControl.sendOrder("010F",String.valueOf(sum));
                     break;
                 }
                 case "2F":{
                     txt_OilSurplus.setText(sum+"%");
+                    deviceControl.sendOrder("012F",String.valueOf(sum));
                     break;
                 }
                 case "5C":{
                     txt_EnginTemperature.setText(sum+"°C");
+                    deviceControl.sendOrder("015C",String.valueOf(sum));
                     break;
                 }
                 case "5E":{
                     txt_OilUse.setText(sum+"L/h");
+                    deviceControl.sendOrder("015E",String.valueOf(sum));
                     break;
                 }
                 default:break;
@@ -378,7 +330,66 @@ public class DeviceControl extends Activity {
         }
 
     }
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void onClick(View view) {
+        if(view.getId()==Clear.getId()){
+            mDataField.setText("");
+        }
+        else if(view.getId()==send.getId()){
+            Send send=new Send(deviceControl);
+            send.execute();
+        }
+        else if(view.getId()==link.getId()){
+            Toast.makeText(deviceControl,"link...",Toast.LENGTH_LONG);
+            mqttlink.start();
+            editText.setText("link");
+        }
+        else if(view.getId()==connectBtn.getId()){
+            ToggleButton toggleButton = (ToggleButton) view;
+            if (!toggleButton.isChecked())//连接开启时check为false
+            {
+                //连接目标设备
+                try {
+                    mBluetoothLeService.connect(mDeviceAddress);
+                    dev_connection.setText("Connected");
+                } catch (Exception e) {
+                    Log.d(TAG, e.getMessage());
+                }
+            } else {
+                //关闭设备连接
+                mBluetoothLeService.disconnect();
+                dev_connection.setText("Disconnected");
+            }
+        }
+    }
+
+    /*****蓝牙部分*****/
+
+
+    /*蓝牙连接*/
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder service) {
+            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
+            if (!mBluetoothLeService.initialize()) {
+                //Log.e(TAG, "Unable to initialize Bluetooth");
+                Toast.makeText(DeviceControl.this, "无法初始化蓝牙设备", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            // Automatically connects to the device upon successful start-up initialization.
+            mBluetoothLeService.connect(mDeviceAddress);
+            //自动连接到目标设备
+//            connectBtn.setChecked(false);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBluetoothLeService = null;
+        }
+    };
+
+
 
     private void updateConnectionState(final int resourceId) {
         runOnUiThread(new Runnable() {
@@ -389,12 +400,10 @@ public class DeviceControl extends Activity {
         });
     }
 
-
     private void clearUI() {
         //mDataField.setText("No Data...");
     }
 
-    /////////////////////////////////////////////////////////////////////////
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
@@ -440,14 +449,15 @@ public class DeviceControl extends Activity {
                         LIST_NAME, lookup(uuid, unknownCharaString));
                 currentCharaData.put(LIST_UUID, uuid);
                 gattCharacteristicGroupData.add(currentCharaData);//写接口
-                if (uuid.equals("0000fff1-0000-1000-8000-00805f9b34fb")) {
-
-                    mWriteCharacteristic = gattCharacteristic;
-
-                } else if (uuid.equals("0000fff4-0000-1000-8000-00805f9b34fb"))//读回调接口
+                if(uuid.equals("0000fff1-0000-1000-8000-00805f9b34fb"))
                 {
 
-                    mNotifyCharacteristic = gattCharacteristic;
+                    mWriteCharacteristic=gattCharacteristic;
+
+                }else if(uuid.equals("0000fff4-0000-1000-8000-00805f9b34fb"))//读回调接口
+                {
+
+                    mNotifyCharacteristic=gattCharacteristic;
                     mBluetoothLeService.setCharacteristicNotification(
                             mNotifyCharacteristic, true);
 
@@ -462,14 +472,14 @@ public class DeviceControl extends Activity {
                 this,
                 gattServiceData,
                 android.R.layout.simple_expandable_list_item_2,
-                new String[]{LIST_NAME, LIST_UUID},
-                new int[]{android.R.id.text1, android.R.id.text2},
+                new String[] {LIST_NAME, LIST_UUID},
+                new int[] { android.R.id.text1, android.R.id.text2 },
                 gattCharacteristicData,
                 android.R.layout.simple_expandable_list_item_2,
-                new String[]{LIST_NAME, LIST_UUID},
-                new int[]{android.R.id.text1, android.R.id.text2}
+                new String[] {LIST_NAME, LIST_UUID},
+                new int[] { android.R.id.text1, android.R.id.text2 }
         );
-
+        // mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
     ////////////////////////////////////////////////////////
@@ -508,8 +518,7 @@ public class DeviceControl extends Activity {
     }
 
 
-    //-----------------------------------------------------------------------
-    //进制转换，没用上
+    /*****没用上的进制转换*****/
     public static String bin2hex(String bin) {
         char[] digital = "0123456789ABCDEF".toCharArray();
         StringBuffer sb = new StringBuffer("");
@@ -546,8 +555,6 @@ public class DeviceControl extends Activity {
             return b2;
         }
     }
-
-    //------------------------------------------------------------------------
 }
 
 

@@ -68,7 +68,7 @@
             android:text="clear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-        </LinearLayout>
+    </LinearLayout>
 
     <RelativeLayout
         android:id="@+id/ctrl_rl_1"
@@ -243,5 +243,13 @@
         android:id="@+id/button"
         android:layout_alignBottom="@+id/editText"
         android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="link"
+        android:id="@+id/btn_link"
+        android:layout_above="@+id/ctrl_rl_1"
+        android:layout_toEndOf="@+id/ctrl_ll_2" />
 
 </RelativeLayout>

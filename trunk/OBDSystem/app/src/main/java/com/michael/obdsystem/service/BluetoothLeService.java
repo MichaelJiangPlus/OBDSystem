@@ -176,12 +176,12 @@ public class BluetoothLeService extends Service {
         // carried out as per profile specifications:
         // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
         //else if (UUID_OBDC_DEVICE.equals(characteristic.getUuid())){
-            //获取到目标设备OBDC发送的特征
+        //获取到目标设备OBDC发送的特征
 
         //}
-            // For all other profiles, writes the data formatted in HEX.
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
+        // For all other profiles, writes the data formatted in HEX.
+        final byte[] data = characteristic.getValue();
+        if (data != null && data.length > 0) {
                 /*
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
                 for(byte byteChar : data)
@@ -189,22 +189,22 @@ public class BluetoothLeService extends Service {
                 System.out.println("格式化后接受的数据"+stringBuilder.toString());
                 intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
                 */
-                try {
-                    String get_str = new String(data, "ASCII");
-                    String get_str_trim=get_str.trim();
-                    last_str+=get_str;
-                    if(get_str_trim.contains(">")){
-                        //System.out.println("last_str"+last_str);
-                        intent.putExtra(EXTRA_DATA,last_str);
-                        sendBroadcast(intent);
-                        last_str="";
-                    }
-
-                    //intent.setAction(ACTION_DATA_AVAILABLE);
-                }catch (Exception e)
-                {
-                    e.printStackTrace();
+            try {
+                String get_str = new String(data, "ASCII");
+                String get_str_trim=get_str.trim();
+                last_str+=get_str;
+                if(get_str_trim.contains(">")){
+                    //System.out.println("last_str"+last_str);
+                    intent.putExtra(EXTRA_DATA,last_str);
+                    sendBroadcast(intent);
+                    last_str="";
                 }
+
+                //intent.setAction(ACTION_DATA_AVAILABLE);
+            }catch (Exception e)
+            {
+                e.printStackTrace();
+            }
 
         }
 
