@@ -166,9 +166,7 @@ public class DeviceControl extends Activity {
         double lat = 30.3287750;//纬度
         double lon = 120.149800;//经度
         //原版  接受GPS并且转换称百度坐标
-//        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(point.getLatitude(), point.getLongitude());
-//        myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
-        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(lat, lon);
+       Point myPoint=CoordinateConversion.wgs_gcj_encrypts(lat, lon);
         myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
 
         deviceControl.sendOrder("location777",myPoint.getLat()+","+myPoint.getLng()+","+"20");
@@ -179,24 +177,12 @@ public class DeviceControl extends Activity {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             //大致意思就是在这里写没有权限的话会怎么样
             Toast.makeText(DeviceControl.this, "没有权限", Toast.LENGTH_LONG);
             return;
         } else {
             List<String> providerList = locationManager.getProviders(true);
             provider = LocationManager.NETWORK_PROVIDER;
-            //
-//            if(providerList.contains(LocationManager.GPS_PROVIDER)){
-//                provider=LocationManager.GPS_PROVIDER;
-//            }
-//            else
-            //
             if (providerList.contains(LocationManager.NETWORK_PROVIDER)) {
                 provider = LocationManager.NETWORK_PROVIDER;
             } else {
@@ -255,7 +241,6 @@ public class DeviceControl extends Activity {
                 super.handleMessage(msg);
             }
         };
-
     }
 
 
@@ -268,12 +253,6 @@ public class DeviceControl extends Activity {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         else {
@@ -307,12 +286,6 @@ public class DeviceControl extends Activity {
         if (locationManager != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
                 return;
             }
             else{
@@ -604,10 +577,3 @@ public class DeviceControl extends Activity {
         }
     }
 }
-
-
-//android.content.ServiceConnection是一个接口，实现（implementate）这个接口有2个方法需要重写（Override）。
-// 一个是当Service成功绑定后会被回调的onServiceConnected()方法，
-// 另一个是当Service解绑定或者Service被关闭时被回调的onServiceDisconnected()。
-//前者（onServiceConnected()方法）会传入一个IBinder对象参数，
-// 这个IBinder对象就是在Service的生命周期回调方法的onBind()方法中的返回值
