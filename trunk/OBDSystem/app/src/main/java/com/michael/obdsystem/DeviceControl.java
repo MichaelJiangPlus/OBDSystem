@@ -1,5 +1,6 @@
 package com.michael.obdsystem;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -10,12 +11,20 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.SimpleExpandableListAdapter;
@@ -23,9 +32,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.michael.obdsystem.model.Point;
 import com.michael.obdsystem.service.BluetoothLeService;
 import com.michael.obdsystem.service.MqttInstance;
 import com.michael.obdsystem.service.Send;
+import com.michael.obdsystem.util.CoordinateConversion;
 import com.michael.obdsystem.util.DataAnalysed;
 import com.michael.obdsystem.util.OBDCProtocol;
 
@@ -39,28 +50,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class DeviceControl extends Activity implements View.OnClickListener {
-    private Button Clear;
-    private Button send;
-    private Button link;
-    private EditText editText;
-    private ToggleButton connectBtn;
-    private TextView dev_name;
-    private TextView dev_addr;
-    private TextView dev_connection;
-    private TextView mDataField;
-    private TextView txt_speed;
-    private TextView txt_EngineTurn;
-    private TextView txt_OilSurplus;
-    private TextView txt_EnginTemperature;
-    private TextView txt_OilUse;
-    private TextView txt_TankTemperature;
-    private TextView txt_CoolantTemperature;
-
+public class DeviceControl extends Activity {
     /*****自定义类*****/
     private DataAnalysed dataAnalysed;
     private OBDCProtocol obdcProtocol;
-
+    private CoordinateConversion coordinateConversion;
     /*****蓝牙部分*****/
     private BluetoothLeService mBluetoothLeService;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
@@ -74,14 +68,14 @@ public class DeviceControl extends Activity implements View.OnClickListener {
     private final String LIST_UUID = "UUID";
 
     /*****MQTT*****/
-    private MqttAsyncClient instance=null;
+    private MqttAsyncClient instance = null;
     private Handler handler;
     private Thread mqttlink;
 
     /*****常用变量*****/
-    private final static int CONNECT=1;
-    private final static int FAIL=0;
-    private final static int SUCCESS=1;
+    private final static int CONNECT = 1;
+    private final static int FAIL = 0;
+    private final static int SUCCESS = 1;
     private final static String TAG = DeviceControl.class.getSimpleName();
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
@@ -91,90 +85,132 @@ public class DeviceControl extends Activity implements View.OnClickListener {
     private int i = 1;
     byte[] WriteBytes = new byte[20];
 
+    /*****GPS全局变量*****/
+    LocationManager locationManager = null;
+    Location myPoint = null;
+    String provider;
 
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            showLocation(myPoint);
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
 
     public static DeviceControl getDeviceControl() {
         return deviceControl;
     }
 
+    private IMqttActionListener mqttActionListener = new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken asyncActionToken) {
+            Message msg = new Message();
+            msg.what = CONNECT;
+            msg.arg1 = SUCCESS;
+            handler.sendMessage(msg);
+        }
+
+        @Override
+        public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+            Message msg = new Message();
+            msg.what = CONNECT;
+            msg.arg1 = FAIL;
+            handler.sendMessage(msg);
+        }
+    };
 
 
-    private void init() {
-        /*****声明自定义类*****/
-        dataAnalysed=new DataAnalysed();
-        obdcProtocol=new OBDCProtocol();
-        deviceControl=this;
-
-        /*****声明控件*****/
-        this.send = (Button) findViewById(R.id.button);
-        this.send.setOnClickListener(this);
-        this.Clear = (Button) findViewById(R.id.btnClear);
-        this.Clear.setOnClickListener(this);
-        this.link=(Button)findViewById(R.id.btn_link);
-        link.setOnClickListener(this);
-        this.connectBtn = (ToggleButton) findViewById(R.id.connectBtn);
-        this.connectBtn.setOnClickListener(this);
-
-        this.editText = (EditText) findViewById(R.id.editText);
-        this.dev_name = (TextView) findViewById(R.id.ctrl_txt2);
-        this.dev_addr = (TextView) findViewById(R.id.ctrl_txt21);
-        this.dev_connection = (TextView) findViewById(R.id.ctrl_txt4);
-        this.mDataField = (TextView) findViewById(R.id.data);
-
-
-        this.txt_speed = (TextView) findViewById(R.id.txt_speed);
-        this.txt_EngineTurn = (TextView) findViewById(R.id.txt_EngineTurn);
-        this.txt_OilSurplus = (TextView) findViewById(R.id.txt_OilSurplus);
-        this.txt_EnginTemperature = (TextView) findViewById(R.id.txt_EnginTemperature);
-        this.txt_OilUse = (TextView) findViewById(R.id.txt_OilUse);
-        this.txt_TankTemperature = (TextView) findViewById(R.id.txt_TankTemperature);
-        this.txt_CoolantTemperature = (TextView) findViewById(R.id.txt_CoolantTemperature);
-
-        mqttlink=  new Thread(){
-            public void run(){
-                instance= MqttInstance.getInstance("iot.eclipse.org:1883","","");
+    private void mqttstart() {
+        mqttlink = new Thread() {
+            public void run() {
+                instance = MqttInstance.getInstance("thingworx.zucc.edu.cn", "", "");
                 try {
-                    instance.connect(MqttInstance.getOptions(),null,mqttActionListener);
+                    instance.connect(MqttInstance.getOptions(), null, mqttActionListener);
                 } catch (MqttException e) {
-                    Log.d("TAGERRor",e.toString());
                     e.printStackTrace();
-                    Toast.makeText(deviceControl,"Fail...",Toast.LENGTH_LONG);
-                    editText.setText("Fail");
+                    Toast.makeText(deviceControl, "Fail...", Toast.LENGTH_LONG);
                 }
             }
         };
         mqttlink.start();
     }
 
-    private IMqttActionListener mqttActionListener=new IMqttActionListener() {
-        @Override
-        public void onSuccess(IMqttToken asyncActionToken) {
-            Message msg=new Message();
-            msg.what=CONNECT;
-            msg.arg1=SUCCESS;
-            handler.sendMessage(msg);
-        }
-        @Override
-        public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-            Message msg=new Message();
-            msg.what=CONNECT;
-            msg.arg1=FAIL;
-            handler.sendMessage(msg);
-        }
-    };
 
-
-    public void sendOrder(String Topic, String order){
-        if(MqttInstance.getInstance().isConnected()){
+    public void sendOrder(String Topic, String order) {
+        if (MqttInstance.getInstance().isConnected()) {
             try {
-                MqttInstance.getInstance().publish(Topic,order.getBytes(),2,false);
+                MqttInstance.getInstance().publish(Topic, order.getBytes(), 2, false);
             } catch (MqttException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    public void showLocation(Location point) {
+        String result = "lat: " + point.getLatitude() + "  " + "lon: " + point.getLongitude();
+        double lat = 30.3287750;//纬度
+        double lon = 120.149800;//经度
+        //原版  接受GPS并且转换称百度坐标
+//        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(point.getLatitude(), point.getLongitude());
+//        myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
+        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(lat, lon);
+        myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
 
+        deviceControl.sendOrder("location777",myPoint.getLat()+","+myPoint.getLng()+","+"20");
+    }
+
+
+    public void GPSReceiver() {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            //大致意思就是在这里写没有权限的话会怎么样
+            Toast.makeText(DeviceControl.this, "没有权限", Toast.LENGTH_LONG);
+            return;
+        } else {
+            List<String> providerList = locationManager.getProviders(true);
+            provider = LocationManager.NETWORK_PROVIDER;
+            //
+//            if(providerList.contains(LocationManager.GPS_PROVIDER)){
+//                provider=LocationManager.GPS_PROVIDER;
+//            }
+//            else
+            //
+            if (providerList.contains(LocationManager.NETWORK_PROVIDER)) {
+                provider = LocationManager.NETWORK_PROVIDER;
+            } else {
+                Toast.makeText(DeviceControl.this, "没有定位服务", Toast.LENGTH_LONG).show();
+                return;
+            }
+            myPoint = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
+
+            if (myPoint != null) {
+                this.showLocation(myPoint);
+            }
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
+        }
+    }
 
 
     @Override
@@ -183,32 +219,37 @@ public class DeviceControl extends Activity implements View.OnClickListener {
          * 主页面初始化
          */
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_device_control);
-        init();
+        //无title
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //全屏
+        getWindow().setFlags(WindowManager.LayoutParams. FLAG_FULLSCREEN , WindowManager.LayoutParams. FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_design);
+
+        dataAnalysed = new DataAnalysed();
+        obdcProtocol = new OBDCProtocol();
+        deviceControl = this;
+
+        mqttstart();
+
         /*****获取要连接的蓝牙名称和地址*****/
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
-
-        // Sets up UI references.
-        dev_name.setText(mDeviceName);
-        dev_addr.setText(mDeviceAddress);
-
-
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-        this.dev_connection.setText("自动连接设备中");
 
-
-        handler=new Handler(){
+        handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
-                if(msg.what==CONNECT){
-                    if(msg.arg1==SUCCESS){
-                        Toast.makeText(DeviceControl.this,"Success",Toast.LENGTH_SHORT).show();
-                    }else{
-                        Toast.makeText(DeviceControl.this,"Fail",Toast.LENGTH_SHORT).show();
+                if (msg.what == CONNECT) {
+                    if (msg.arg1 == SUCCESS) {
+                        Toast.makeText(DeviceControl.this, "Success", Toast.LENGTH_SHORT).show();
+                        Send send=new Send(deviceControl);
+                        send.execute();
+                        deviceControl.GPSReceiver();
+                    } else {
+                        Toast.makeText(DeviceControl.this, "Fail", Toast.LENGTH_SHORT).show();
                     }
                 }
                 super.handleMessage(msg);
@@ -220,12 +261,34 @@ public class DeviceControl extends Activity implements View.OnClickListener {
 
     @Override
     protected void onResume() {
+        if(getRequestedOrientation()!= ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
         super.onResume();
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        else {
+            if(locationManager!=null){
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
+            }
+        }
+
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+
         if (mBluetoothLeService != null) {
             final boolean result = mBluetoothLeService.connect(mDeviceAddress);
             Log.d(TAG, "Connect request result=" + result);
         }
+
     }
 
     @Override
@@ -240,6 +303,24 @@ public class DeviceControl extends Activity implements View.OnClickListener {
         unbindService(mServiceConnection);
         mBluetoothLeService.disconnect();
         mBluetoothLeService = null;
+
+        if (locationManager != null) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            else{
+                locationManager.removeUpdates(locationListener);
+            }
+
+        }
+
     }
 
 
@@ -288,83 +369,50 @@ public class DeviceControl extends Activity implements View.OnClickListener {
             String sum=df.format(temp);
             switch (command){
                 case "05":{
-                    txt_CoolantTemperature.setText(sum+"°C");
+//                    txt_CoolantTemperature.setText(sum+"°C");
                     deviceControl.sendOrder("0105",String.valueOf(sum));
                     break;
                 }
                 case "0C":{
-                    txt_EngineTurn.setText(sum+"rpm");
+//                    txt_EngineTurn.setText(sum+"rpm");
                     deviceControl.sendOrder("010C",String.valueOf(sum));
                     break;
                 }
                 case "0D":{
-                    txt_speed.setText(sum+"Km/h");
+//                    txt_speed.setText(sum+"Km/h");
                     deviceControl.sendOrder("010D",String.valueOf(sum));
                     break;
                 }
                 case "0F":{
-                    txt_TankTemperature.setText(sum+"°C");
+//                    txt_TankTemperature.setText(sum+"°C");
                     deviceControl.sendOrder("010F",String.valueOf(sum));
                     break;
                 }
                 case "2F":{
-                    txt_OilSurplus.setText(sum+"%");
+//                    txt_OilSurplus.setText(sum+"%");
                     deviceControl.sendOrder("012F",String.valueOf(sum));
                     break;
                 }
                 case "5C":{
-                    txt_EnginTemperature.setText(sum+"°C");
+//                    txt_EnginTemperature.setText(sum+"°C");
                     deviceControl.sendOrder("015C",String.valueOf(sum));
                     break;
                 }
                 case "5E":{
-                    txt_OilUse.setText(sum+"L/h");
+//                    txt_OilUse.setText(sum+"L/h");
                     deviceControl.sendOrder("015E",String.valueOf(sum));
                     break;
                 }
                 default:break;
             }
 
-            mDataField.setText(data);
+//            mDataField.setText(data);
 
         }
 
-    }
-    @Override
-    public void onClick(View view) {
-        if(view.getId()==Clear.getId()){
-            mDataField.setText("");
-        }
-        else if(view.getId()==send.getId()){
-            Send send=new Send(deviceControl);
-            send.execute();
-        }
-        else if(view.getId()==link.getId()){
-            Toast.makeText(deviceControl,"link...",Toast.LENGTH_LONG);
-            mqttlink.start();
-            editText.setText("link");
-        }
-        else if(view.getId()==connectBtn.getId()){
-            ToggleButton toggleButton = (ToggleButton) view;
-            if (!toggleButton.isChecked())//连接开启时check为false
-            {
-                //连接目标设备
-                try {
-                    mBluetoothLeService.connect(mDeviceAddress);
-                    dev_connection.setText("Connected");
-                } catch (Exception e) {
-                    Log.d(TAG, e.getMessage());
-                }
-            } else {
-                //关闭设备连接
-                mBluetoothLeService.disconnect();
-                dev_connection.setText("Disconnected");
-            }
-        }
     }
 
     /*****蓝牙部分*****/
-
 
     /*蓝牙连接*/
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -395,7 +443,7 @@ public class DeviceControl extends Activity implements View.OnClickListener {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                dev_connection.setText(resourceId);
+//                dev_connection.setText(resourceId);
             }
         });
     }
