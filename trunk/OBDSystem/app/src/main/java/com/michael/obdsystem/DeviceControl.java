@@ -13,6 +13,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -21,6 +22,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.app.ActivityCompat;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -39,51 +41,81 @@ import com.michael.obdsystem.service.Send;
 import com.michael.obdsystem.util.CoordinateConversion;
 import com.michael.obdsystem.util.DataAnalysed;
 import com.michael.obdsystem.util.OBDCProtocol;
+import com.michael.obdsystem.view.DashBoard;
 
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 public class DeviceControl extends Activity {
     /*****自定义类*****/
     private DataAnalysed dataAnalysed;
     private OBDCProtocol obdcProtocol;
-    private CoordinateConversion coordinateConversion;
+    private static DeviceControl deviceControl = null;
+    private  String uuid="";
+
     /*****蓝牙部分*****/
+
+    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
+    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+
     private BluetoothLeService mBluetoothLeService;
-    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
-            new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
     private boolean mConnected = false;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private BluetoothGattCharacteristic mWriteCharacteristic;
+
+    private int i = 1;
+    byte[] WriteBytes = new byte[20];
     private String mDeviceName;
     private String mDeviceAddress;
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+    private final static String TAG = DeviceControl.class.getSimpleName();
 
     /*****MQTT*****/
-    private MqttAsyncClient instance = null;
+    private final static int CONNECTED=1;
+    private final static int LOST=2;
+    private final static int FAIL=3;
+    private final static int RECEIVE=4;
+
+    private MqttAsyncClient client=null;
     private Handler handler;
-    private Thread mqttlink;
 
-    /*****常用变量*****/
-    private final static int CONNECT = 1;
-    private final static int FAIL = 0;
-    private final static int SUCCESS = 1;
-    private final static String TAG = DeviceControl.class.getSimpleName();
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-    private static DeviceControl deviceControl = null;
+    private final static String Host = "thingworx.zucc.edu.cn";
+    private final static String HostPort = "1883";
+    private final static String username = "jiangzhanxiang";
+    private final static String userpwd = "KLSFDJW9203";
+    private String pubTopic ="";
+    private String pubInfo ="";
+    private String subTopic = "";
 
-    /*****自定义全局变量*****/
-    private int i = 1;
-    byte[] WriteBytes = new byte[20];
+
+
+    /*****界面相关控件*****/
+    private String info_EngineTurn;
+    private String info_OilSurplus;
+    private String info_CoolantTemperature;
+    private String info_TankTemperature;
+    private String info_OilUse;
+    private TextView txt_EngineTurn;
+    private TextView txt_OilSurplus;
+    private TextView txt_CoolantTemperature;
+    private TextView txt_TankTemperature;
+    private TextView txt_OilUse;
+    private Button btn_send;
+
+    private DashBoard myview;
+
 
     /*****GPS全局变量*****/
     LocationManager locationManager = null;
@@ -116,45 +148,78 @@ public class DeviceControl extends Activity {
         return deviceControl;
     }
 
-    private IMqttActionListener mqttActionListener = new IMqttActionListener() {
+
+    private IMqttActionListener mqttActionListener=new IMqttActionListener() {
         @Override
         public void onSuccess(IMqttToken asyncActionToken) {
-            Message msg = new Message();
-            msg.what = CONNECT;
-            msg.arg1 = SUCCESS;
+            Message msg=new Message();
+            msg.what=CONNECTED;
             handler.sendMessage(msg);
         }
 
         @Override
         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-            Message msg = new Message();
-            msg.what = CONNECT;
-            msg.arg1 = FAIL;
+            Message msg=new Message();
+            msg.what=FAIL;
             handler.sendMessage(msg);
         }
     };
 
-
     private void mqttstart() {
-        mqttlink = new Thread() {
-            public void run() {
-                instance = MqttInstance.getInstance("thingworx.zucc.edu.cn", "", "");
-                try {
-                    instance.connect(MqttInstance.getOptions(), null, mqttActionListener);
-                } catch (MqttException e) {
-                    e.printStackTrace();
-                    Toast.makeText(deviceControl, "Fail...", Toast.LENGTH_LONG);
+        handler  =new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                if(msg.what==CONNECTED){
+                    Toast.makeText(DeviceControl.this,"连接成功",Toast.LENGTH_SHORT).show();
+                    deviceControl.GPSReceiver();
+                }else if(msg.what==LOST){
+                    Toast.makeText(DeviceControl.this,"连接丢失，进行重连",Toast.LENGTH_SHORT).show();
+                    new ConnectThread().start();
+                }else if(msg.what==FAIL){
+                    Toast.makeText(DeviceControl.this,"连接失败",Toast.LENGTH_SHORT).show();
                 }
+                super.handleMessage(msg);
             }
         };
-        mqttlink.start();
+        new ConnectThread().start();
+    }
+
+    public MqttConnectOptions getOptions(){
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setCleanSession(true);
+        String strUserName=username;
+        String strPassword=userpwd;
+        if(strUserName!=null&&strUserName.length()>0&&strPassword!=null&&strPassword.length()>0){
+            options.setUserName(strUserName);
+            options.setPassword(strPassword.toCharArray());
+            options.setConnectionTimeout(10);
+            options.setKeepAliveInterval(30);
+        }
+        return options;
+    }
+
+    private class ConnectThread extends Thread{
+        @Override
+        public void run(){
+            if(client==null){
+                try {
+                    client=new MqttAsyncClient("tcp://"+Host+":"+HostPort, ""+ UUID.randomUUID(),new MemoryPersistence());
+                    client.connect(getOptions(),null,mqttActionListener);
+                    //如果有Sub的话只需要在写一个callback就好
+//                    client.setCallback(callback);
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 
+
     public void sendOrder(String Topic, String order) {
-        if (MqttInstance.getInstance().isConnected()) {
+        if(Topic.length()>0&&client!=null&&client.isConnected()){
             try {
-                MqttInstance.getInstance().publish(Topic, order.getBytes(), 2, false);
+                client.publish(Topic,order.getBytes(),2,false);
             } catch (MqttException e) {
                 e.printStackTrace();
             }
@@ -166,7 +231,9 @@ public class DeviceControl extends Activity {
         double lat = 30.3287750;//纬度
         double lon = 120.149800;//经度
         //原版  接受GPS并且转换称百度坐标
-       Point myPoint=CoordinateConversion.wgs_gcj_encrypts(lat, lon);
+//        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(point.getLatitude(), point.getLongitude());
+//        myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
+        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(lat, lon);
         myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
 
         deviceControl.sendOrder("location777",myPoint.getLat()+","+myPoint.getLng()+","+"20");
@@ -177,12 +244,24 @@ public class DeviceControl extends Activity {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
             //大致意思就是在这里写没有权限的话会怎么样
             Toast.makeText(DeviceControl.this, "没有权限", Toast.LENGTH_LONG);
             return;
         } else {
             List<String> providerList = locationManager.getProviders(true);
             provider = LocationManager.NETWORK_PROVIDER;
+            //
+//            if(providerList.contains(LocationManager.GPS_PROVIDER)){
+//                provider=LocationManager.GPS_PROVIDER;
+//            }
+//            else
+            //
             if (providerList.contains(LocationManager.NETWORK_PROVIDER)) {
                 provider = LocationManager.NETWORK_PROVIDER;
             } else {
@@ -198,6 +277,28 @@ public class DeviceControl extends Activity {
         }
     }
 
+    private void init(){
+        txt_EngineTurn=(TextView)findViewById(R.id.txt_EngineTurn);
+        txt_OilSurplus=(TextView)findViewById(R.id.txt_OilSurplus);
+        txt_CoolantTemperature=(TextView)findViewById(R.id.txt_CoolantTemperature);
+        txt_TankTemperature=(TextView)findViewById(R.id.txt_TankTemperature);
+        txt_OilUse=(TextView)findViewById(R.id.txt_OilUse);
+
+        Typeface typeface = Typeface.createFromAsset(getAssets(),"fonts/ttt.ttf");
+        txt_EngineTurn.setTypeface(typeface);
+        txt_OilSurplus.setTypeface(typeface);
+        txt_CoolantTemperature.setTypeface(typeface);
+        txt_TankTemperature.setTypeface(typeface);
+        txt_OilUse.setTypeface(typeface);
+
+        info_CoolantTemperature =  txt_CoolantTemperature.getText().toString();
+        info_EngineTurn  = txt_EngineTurn.getText().toString();
+        info_OilSurplus = txt_OilSurplus.getText().toString();
+        info_OilUse = txt_OilUse.getText().toString();
+        info_TankTemperature = txt_TankTemperature.getText().toString();
+
+        myview=(DashBoard)findViewById(R.id.frame);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -215,44 +316,52 @@ public class DeviceControl extends Activity {
         obdcProtocol = new OBDCProtocol();
         deviceControl = this;
 
-        mqttstart();
+
+        TelephonyManager tm = (TelephonyManager) deviceControl.getSystemService(TELEPHONY_SERVICE);
+        uuid=tm.getSubscriberId();
+
+        init();
+
+        btn_send = (Button)findViewById(R.id.btn_send);
+        btn_send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Send send=new Send(deviceControl);
+                send.execute();
+                btn_send.setVisibility(View.INVISIBLE);
+//                deviceControl.sendOrder("CarUUID",uuid);
+            }
+        });
+
 
         /*****获取要连接的蓝牙名称和地址*****/
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
-
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
-        handler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                if (msg.what == CONNECT) {
-                    if (msg.arg1 == SUCCESS) {
-                        Toast.makeText(DeviceControl.this, "Success", Toast.LENGTH_SHORT).show();
-                        Send send=new Send(deviceControl);
-                        send.execute();
-                        deviceControl.GPSReceiver();
-                    } else {
-                        Toast.makeText(DeviceControl.this, "Fail", Toast.LENGTH_SHORT).show();
-                    }
-                }
-                super.handleMessage(msg);
-            }
-        };
+
+        mqttstart();
+
     }
 
 
     @Override
     protected void onResume() {
-        if(getRequestedOrientation()!= ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
+        if(getRequestedOrientation()!=ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
         super.onResume();
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         else {
@@ -267,7 +376,6 @@ public class DeviceControl extends Activity {
             final boolean result = mBluetoothLeService.connect(mDeviceAddress);
             Log.d(TAG, "Connect request result=" + result);
         }
-
     }
 
     @Override
@@ -280,22 +388,131 @@ public class DeviceControl extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         unbindService(mServiceConnection);
-        mBluetoothLeService.disconnect();
+        if(mBluetoothLeService != null)
+            mBluetoothLeService.disconnect();
         mBluetoothLeService = null;
-
         if (locationManager != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
                 return;
             }
             else{
                 locationManager.removeUpdates(locationListener);
             }
-
         }
-
     }
 
+    /**
+     * 数据处理,在这里处理我们刚获得的数据
+     * @param data
+     */
+    private void displayData(String data) {
+        if (data != null) {
+            byte[][] result;
+            result = dataAnalysed.analysisDate(data);
+            String command=new String (result[1]);//命令位
+            int a=dataAnalysed.hexTodec(result[2]);//A
+            int b=dataAnalysed.hexTodec(result[3]);//B
+            DecimalFormat    df   = new DecimalFormat("######0.00");
+            double temp=obdcProtocol.Mode01_calculate(command,a,b,0);
+            String sum=df.format(temp);
+//            Toast.makeText(DeviceControl.this,command,Toast.LENGTH_LONG).show();
+            switch (command){
+                case "05":{
+                    txt_CoolantTemperature.setText(info_CoolantTemperature+sum+"°C");
+                    deviceControl.sendOrder("0105",String.valueOf(sum));
+                    break;
+                }
+                case "0C":{
+                    txt_EngineTurn.setText(info_EngineTurn+sum+"rpm");
+                    deviceControl.sendOrder("010C",String.valueOf(sum));
+                    break;
+                }
+                case "0D":{
+//                    txt_speed.setText(sum+"Km/h");
+                    float pf = Float.valueOf(sum) / 236.5f;
+                    myview.setCurrentStatus(pf);//旋转角度
+                    myview.invalidate();//显示值的变化
+                    deviceControl.sendOrder("010D",String.valueOf(sum));
+                    break;
+                }
+                case "0F":{
+                    txt_TankTemperature.setText(info_TankTemperature+sum+"°C");
+                    deviceControl.sendOrder("010F",String.valueOf(sum));
+                    break;
+                }
+                case "2F":{
+                    txt_OilSurplus.setText(info_OilSurplus+sum+"%");
+                    deviceControl.sendOrder("012F",String.valueOf(sum));
+                    break;
+                }
+                case "5C":{
+//                    txt_EnginTemperature.setText(sum+"°C");
+                    deviceControl.sendOrder("015C",String.valueOf(sum));
+                    break;
+                }
+                case "5E":{
+                    txt_OilUse.setText(info_OilUse+sum+"L/h");
+                    deviceControl.sendOrder("015E",String.valueOf(sum));
+                    break;
+                }
+                default:break;
+            }
+        }
+    }
+
+    /*****蓝牙部分*****/
+
+    /*蓝牙连接*/
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder service) {
+            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
+            if (!mBluetoothLeService.initialize()) {
+                //Log.e(TAG, "Unable to initialize Bluetooth");
+                Toast.makeText(DeviceControl.this, "无法初始化蓝牙设备", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            // Automatically connects to the device upon successful start-up initialization.
+            mBluetoothLeService.connect(mDeviceAddress);
+            //自动连接到目标设备
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBluetoothLeService = null;
+        }
+
+    };
+
+    private void updateConnectionState(final int resourceId) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+//                dev_connection.setText(resourceId);
+            }
+        });
+    }
+
+    private void clearUI() {
+        //mDataField.setText("No Data...");
+    }
+
+
+    private static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+        return intentFilter;
+    }
 
 
     //通过BroadcastReceiver获取的信息
@@ -324,116 +541,6 @@ public class DeviceControl extends Activity {
             }
         }
     };
-
-    /**
-     * 数据处理,在这里处理我们刚获得的数据
-     *
-     * @param data
-     */
-    private void displayData(String data) {
-        if (data != null) {
-            byte[][] result;
-            result = dataAnalysed.analysisDate(data);
-            String command=new String (result[1]);//命令位
-            int a=dataAnalysed.hexTodec(result[2]);//A
-            int b=dataAnalysed.hexTodec(result[3]);//B
-            DecimalFormat    df   = new DecimalFormat("######0.00");
-            double temp=obdcProtocol.Mode01_calculate(command,a,b,0);
-            String sum=df.format(temp);
-            switch (command){
-                case "05":{
-//                    txt_CoolantTemperature.setText(sum+"°C");
-                    deviceControl.sendOrder("0105",String.valueOf(sum));
-                    break;
-                }
-                case "0C":{
-//                    txt_EngineTurn.setText(sum+"rpm");
-                    deviceControl.sendOrder("010C",String.valueOf(sum));
-                    break;
-                }
-                case "0D":{
-//                    txt_speed.setText(sum+"Km/h");
-                    deviceControl.sendOrder("010D",String.valueOf(sum));
-                    break;
-                }
-                case "0F":{
-//                    txt_TankTemperature.setText(sum+"°C");
-                    deviceControl.sendOrder("010F",String.valueOf(sum));
-                    break;
-                }
-                case "2F":{
-//                    txt_OilSurplus.setText(sum+"%");
-                    deviceControl.sendOrder("012F",String.valueOf(sum));
-                    break;
-                }
-                case "5C":{
-//                    txt_EnginTemperature.setText(sum+"°C");
-                    deviceControl.sendOrder("015C",String.valueOf(sum));
-                    break;
-                }
-                case "5E":{
-//                    txt_OilUse.setText(sum+"L/h");
-                    deviceControl.sendOrder("015E",String.valueOf(sum));
-                    break;
-                }
-                default:break;
-            }
-
-//            mDataField.setText(data);
-
-        }
-
-    }
-
-    /*****蓝牙部分*****/
-
-    /*蓝牙连接*/
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
-            if (!mBluetoothLeService.initialize()) {
-                //Log.e(TAG, "Unable to initialize Bluetooth");
-                Toast.makeText(DeviceControl.this, "无法初始化蓝牙设备", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-            // Automatically connects to the device upon successful start-up initialization.
-            mBluetoothLeService.connect(mDeviceAddress);
-            //自动连接到目标设备
-//            connectBtn.setChecked(false);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothLeService = null;
-        }
-    };
-
-
-
-    private void updateConnectionState(final int resourceId) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-//                dev_connection.setText(resourceId);
-            }
-        });
-    }
-
-    private void clearUI() {
-        //mDataField.setText("No Data...");
-    }
-
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
-    }
-
 
     private void displayGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
@@ -472,16 +579,12 @@ public class DeviceControl extends Activity {
                 gattCharacteristicGroupData.add(currentCharaData);//写接口
                 if(uuid.equals("0000fff1-0000-1000-8000-00805f9b34fb"))
                 {
-
                     mWriteCharacteristic=gattCharacteristic;
-
                 }else if(uuid.equals("0000fff4-0000-1000-8000-00805f9b34fb"))//读回调接口
                 {
-
                     mNotifyCharacteristic=gattCharacteristic;
                     mBluetoothLeService.setCharacteristicNotification(
                             mNotifyCharacteristic, true);
-
                 }
 
             }
@@ -538,42 +641,4 @@ public class DeviceControl extends Activity {
         }
     }
 
-
-    /*****没用上的进制转换*****/
-    public static String bin2hex(String bin) {
-        char[] digital = "0123456789ABCDEF".toCharArray();
-        StringBuffer sb = new StringBuffer("");
-        byte[] bs = bin.getBytes();
-        int bit;
-        for (int i = 0; i < bs.length; i++) {
-            bit = (bs[i] & 0x0f0) >> 4;
-            sb.append(digital[bit]);
-            bit = bs[i] & 0x0f;
-            sb.append(digital[bit]);
-        }
-        return sb.toString();
-    }
-
-    public static byte[] hex2byte(byte[] b) {
-        if ((b.length % 2) != 0) {
-            //throw new IllegalArgumentException("长度不是偶数");
-            //edit by me 由原来的抛出异常改为用回车补全
-            byte[] b2 = new byte[(b.length - 1) / 2 + 1];
-            for (int i = 0; i < b.length - 1; i += 2) {
-                String item = new String(b, i, 2);
-                b2[i / 2] = (byte) Integer.parseInt(item, 16);
-            }
-            b = null;
-            return b2;
-        } else {
-            byte[] b2 = new byte[b.length / 2];
-            for (int n = 0; n < b.length; n += 2) {
-                String item = new String(b, n, 2);
-                // 两位一组，表示一个字节,把这样表示的16进制字符串，还原成一个进制字节
-                b2[n / 2] = (byte) Integer.parseInt(item, 16);
-            }
-            b = null;
-            return b2;
-        }
-    }
 }
