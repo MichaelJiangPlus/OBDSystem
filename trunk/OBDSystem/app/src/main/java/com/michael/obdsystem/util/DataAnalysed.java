@@ -26,7 +26,6 @@ public class DataAnalysed {
         return result;
     }
 
-
     public  int hexTodec(byte[] result){
         int sum=0;
         for(int i=0;i<result.length;i++){

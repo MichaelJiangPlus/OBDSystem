@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
@@ -28,15 +27,12 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import com.michael.obdsystem.model.Point;
 import com.michael.obdsystem.service.BluetoothLeService;
-import com.michael.obdsystem.service.MqttInstance;
 import com.michael.obdsystem.service.Send;
 import com.michael.obdsystem.util.CoordinateConversion;
 import com.michael.obdsystem.util.DataAnalysed;
@@ -56,12 +52,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+
 public class DeviceControl extends Activity {
     /*****自定义类*****/
     private DataAnalysed dataAnalysed;
     private OBDCProtocol obdcProtocol;
     private static DeviceControl deviceControl = null;
-    private  String uuid="";
+    private String uuid="";
 
     /*****蓝牙部分*****/
 
@@ -113,7 +110,7 @@ public class DeviceControl extends Activity {
     private TextView txt_TankTemperature;
     private TextView txt_OilUse;
     private Button btn_send;
-
+    private Button button3;
     private DashBoard myview;
 
 
@@ -148,7 +145,6 @@ public class DeviceControl extends Activity {
         return deviceControl;
     }
 
-
     private IMqttActionListener mqttActionListener=new IMqttActionListener() {
         @Override
         public void onSuccess(IMqttToken asyncActionToken) {
@@ -170,13 +166,13 @@ public class DeviceControl extends Activity {
             @Override
             public void handleMessage(Message msg) {
                 if(msg.what==CONNECTED){
-                    Toast.makeText(DeviceControl.this,"连接成功",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DeviceControl.this,"连接成功", Toast.LENGTH_SHORT).show();
                     deviceControl.GPSReceiver();
                 }else if(msg.what==LOST){
-                    Toast.makeText(DeviceControl.this,"连接丢失，进行重连",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DeviceControl.this,"连接丢失，进行重连", Toast.LENGTH_SHORT).show();
                     new ConnectThread().start();
                 }else if(msg.what==FAIL){
-                    Toast.makeText(DeviceControl.this,"连接失败",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DeviceControl.this,"连接失败", Toast.LENGTH_SHORT).show();
                 }
                 super.handleMessage(msg);
             }
@@ -198,7 +194,7 @@ public class DeviceControl extends Activity {
         return options;
     }
 
-    private class ConnectThread extends Thread{
+    private class ConnectThread extends Thread {
         @Override
         public void run(){
             if(client==null){
@@ -226,14 +222,15 @@ public class DeviceControl extends Activity {
         }
     }
 
+
     public void showLocation(Location point) {
         String result = "lat: " + point.getLatitude() + "  " + "lon: " + point.getLongitude();
         double lat = 30.3287750;//纬度
         double lon = 120.149800;//经度
-        //原版  接受GPS并且转换称百度坐标
+          //原版  接受GPS并且转换称百度坐标
 //        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(point.getLatitude(), point.getLongitude());
 //        myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
-        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(lat, lon);
+        Point myPoint= CoordinateConversion.wgs_gcj_encrypts(lat, lon);
         myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
 
         deviceControl.sendOrder("location777",myPoint.getLat()+","+myPoint.getLng()+","+"20");
@@ -341,15 +338,25 @@ public class DeviceControl extends Activity {
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+        button3 = (Button)findViewById(R.id.button3);
+        button3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(DeviceControl.this,DataShowActivity.class);
+                intent.putExtra(DeviceControl.EXTRAS_DEVICE_NAME, mDeviceName);
+                intent.putExtra(DeviceControl.EXTRAS_DEVICE_ADDRESS, mDeviceAddress);
+                startActivity(intent);
+                DeviceControl.this.onDestroy();
+            }
+        });
 
         mqttstart();
 
     }
 
-
     @Override
     protected void onResume() {
-        if(getRequestedOrientation()!=ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
+        if(getRequestedOrientation()!= ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
         super.onResume();
@@ -416,22 +423,22 @@ public class DeviceControl extends Activity {
         if (data != null) {
             byte[][] result;
             result = dataAnalysed.analysisDate(data);
-            String command=new String (result[1]);//命令位
+            String command=new String(result[1]);//命令位
             int a=dataAnalysed.hexTodec(result[2]);//A
             int b=dataAnalysed.hexTodec(result[3]);//B
-            DecimalFormat    df   = new DecimalFormat("######0.00");
+            DecimalFormat df   = new DecimalFormat("######0.00");
             double temp=obdcProtocol.Mode01_calculate(command,a,b,0);
             String sum=df.format(temp);
 //            Toast.makeText(DeviceControl.this,command,Toast.LENGTH_LONG).show();
             switch (command){
                 case "05":{
                     txt_CoolantTemperature.setText(info_CoolantTemperature+sum+"°C");
-                    deviceControl.sendOrder("0105",String.valueOf(sum));
+                    deviceControl.sendOrder("0105", String.valueOf(sum));
                     break;
                 }
                 case "0C":{
                     txt_EngineTurn.setText(info_EngineTurn+sum+"rpm");
-                    deviceControl.sendOrder("010C",String.valueOf(sum));
+                    deviceControl.sendOrder("010C", String.valueOf(sum));
                     break;
                 }
                 case "0D":{
@@ -439,27 +446,27 @@ public class DeviceControl extends Activity {
                     float pf = Float.valueOf(sum) / 236.5f;
                     myview.setCurrentStatus(pf);//旋转角度
                     myview.invalidate();//显示值的变化
-                    deviceControl.sendOrder("010D",String.valueOf(sum));
+                    deviceControl.sendOrder("010D", String.valueOf(sum));
                     break;
                 }
                 case "0F":{
                     txt_TankTemperature.setText(info_TankTemperature+sum+"°C");
-                    deviceControl.sendOrder("010F",String.valueOf(sum));
+                    deviceControl.sendOrder("010F", String.valueOf(sum));
                     break;
                 }
                 case "2F":{
                     txt_OilSurplus.setText(info_OilSurplus+sum+"%");
-                    deviceControl.sendOrder("012F",String.valueOf(sum));
+                    deviceControl.sendOrder("012F", String.valueOf(sum));
                     break;
                 }
                 case "5C":{
 //                    txt_EnginTemperature.setText(sum+"°C");
-                    deviceControl.sendOrder("015C",String.valueOf(sum));
+                    deviceControl.sendOrder("015C", String.valueOf(sum));
                     break;
                 }
                 case "5E":{
                     txt_OilUse.setText(info_OilUse+sum+"L/h");
-                    deviceControl.sendOrder("015E",String.valueOf(sum));
+                    deviceControl.sendOrder("015E", String.valueOf(sum));
                     break;
                 }
                 default:break;
@@ -490,6 +497,8 @@ public class DeviceControl extends Activity {
         }
 
     };
+
+
 
     private void updateConnectionState(final int resourceId) {
         runOnUiThread(new Runnable() {
@@ -603,7 +612,7 @@ public class DeviceControl extends Activity {
                 new String[] {LIST_NAME, LIST_UUID},
                 new int[] { android.R.id.text1, android.R.id.text2 }
         );
-        // mGattServicesList.setAdapter(gattServiceAdapter);
+       // mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
     ////////////////////////////////////////////////////////
@@ -642,3 +651,10 @@ public class DeviceControl extends Activity {
     }
 
 }
+
+
+//android.content.ServiceConnection是一个接口，实现（implementate）这个接口有2个方法需要重写（Override）。
+// 一个是当Service成功绑定后会被回调的onServiceConnected()方法，
+// 另一个是当Service解绑定或者Service被关闭时被回调的onServiceDisconnected()。
+//前者（onServiceConnected()方法）会传入一个IBinder对象参数，
+// 这个IBinder对象就是在Service的生命周期回调方法的onBind()方法中的返回值

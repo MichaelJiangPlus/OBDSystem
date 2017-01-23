@@ -8,6 +8,8 @@ import com.michael.obdsystem.model.Point;
  * @Time 2015年4月16日18:19:16
  *
  * */
+
+
 public class CoordinateConversion {
     private static final double x_pi = 3.14159265358979324 * 3000.0 / 180.0;
     private static final double pi = 3.14159265358979324;
@@ -42,7 +44,7 @@ public class CoordinateConversion {
         Point point=new Point();
         double x = bd_lon - 0.0065, y = bd_lat - 0.006;
         double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * x_pi);
-        double theta =Math.atan2(y, x) - 0.000003 * Math.cos(x * x_pi);
+        double theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * x_pi);
         double gg_lon = z * Math.cos(theta);
         double gg_lat = z * Math.sin(theta);
         point.setLat(gg_lat);

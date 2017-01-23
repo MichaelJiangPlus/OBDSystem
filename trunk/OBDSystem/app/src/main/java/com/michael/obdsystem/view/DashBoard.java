@@ -17,11 +17,12 @@ import android.graphics.Paint.Align;
 import android.util.AttributeSet;
 import android.util.Log;
 
-
 /**
- * Created by MichaelJiang on 2017/1/21.
+ * @ClassName DialChart例子
+ * @Description  仪表盘例子
+ * @author XiongChuanLiang<br/>(xcl_168@aliyun.com)
+ *
  */
-
 public class DashBoard extends GraphicalView {
 
     private String TAG = "DialChart03View";
@@ -50,8 +51,6 @@ public class DashBoard extends GraphicalView {
     {
         chartRender();
     }
-
-
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {

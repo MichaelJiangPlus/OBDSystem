@@ -56,7 +56,6 @@ public class BluetoothLeService extends Service {
     public final static UUID UUID_OBDC_DEVICE= UUID.fromString(OBDCProtocol.UUID_OBDC_DEVICE_CHA1);
 
 
-
     private final IBinder mBinder = new LocalBinder();
 
 
@@ -84,8 +83,8 @@ public class BluetoothLeService extends Service {
 
 
     public BluetoothLeService() {
-    }
 
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -120,7 +119,6 @@ public class BluetoothLeService extends Service {
             return false;
         }
 
-
         // Previously connected device.  Try to reconnect.
         if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress)
                 && mBluetoothGatt != null) {
@@ -131,6 +129,7 @@ public class BluetoothLeService extends Service {
             } else {
                 return false;
             }
+
         }
 
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
@@ -164,7 +163,6 @@ public class BluetoothLeService extends Service {
         sendBroadcast(intent);
         //广播事件
     }
-
 
     private String last_str="";
     //从特征中分析返回的数据并表示为action后进行广播
@@ -313,8 +311,3 @@ public class BluetoothLeService extends Service {
         return mBluetoothGatt.getServices();
     }
 }
-
-
-
-//01 0D 3F 0D 0D 3E
-//01 0C

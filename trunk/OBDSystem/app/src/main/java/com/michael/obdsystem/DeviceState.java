@@ -6,12 +6,15 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -25,7 +28,6 @@ public class DeviceState extends Activity {
     private ListView listView;
     private Button buttonScan;
     private Button buttonStop;
-    private TextView textView;
 
     private Handler mHandler;
     private boolean mScanning;
@@ -38,13 +40,18 @@ public class DeviceState extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //无title
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        //全屏
+        getWindow().setFlags(WindowManager.LayoutParams. FLAG_FULLSCREEN , WindowManager.LayoutParams. FLAG_FULLSCREEN);
         setContentView(R.layout.activity_device_state);
 
         //控件初始化
         this.listView=(ListView)findViewById(R.id.dev_lv1);
         this.buttonScan=(Button)findViewById(R.id.dev_btn1);
         this.buttonStop=(Button)findViewById(R.id.dev_btn2);
-        this.textView=(TextView)findViewById(R.id.dev_txt2);
 
         //扫描时间控制
         mHandler = new Handler();
@@ -58,6 +65,7 @@ public class DeviceState extends Activity {
                 scanLeDevice(true);
             }
         });
+
         this.buttonStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -84,8 +92,6 @@ public class DeviceState extends Activity {
             }
         });
 
-
-
         //初始化蓝牙部分，检测蓝牙是否支持
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "你的设备不支持BLE功能", Toast.LENGTH_SHORT).show();
@@ -101,24 +107,14 @@ public class DeviceState extends Activity {
             finish();
             return;
         }
-
-        //测试服务运转代码
-        /*
-        Context context=DeviceState.this;
-        ActivityManager am = (ActivityManager)context.getSystemService(context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningServiceInfo> list = am.getRunningServices(150);
-        for(ActivityManager.RunningServiceInfo info : list) {
-            if (!info.service.getClassName().equals("com.shesi.aidrive.BLEService"))
-             {
-                //
-                //service的全称（一般为包名+service类的名称）
-            }
-        }*/
     }
 
 
     @Override
     protected void onResume() {
+        if(getRequestedOrientation()!= ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
         super.onResume();
 
         // 如果蓝牙未开启，启动蓝牙
@@ -128,6 +124,7 @@ public class DeviceState extends Activity {
                 startActivityForResult(enableBtIntent, 1);
             }
         }
+
         // 将数据源绑定到UI
         mLeDeviceListAdapter = new LeDeviceListAdapter();
         listView.setAdapter(mLeDeviceListAdapter);
@@ -162,7 +159,6 @@ public class DeviceState extends Activity {
                 public void run() {
                     mScanning = false;
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                    textView.setText("已停止扫描");
                 }
             }, SCAN_PERIOD);
 
@@ -172,17 +168,7 @@ public class DeviceState extends Activity {
             mScanning = false;
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
         }
-        if(mScanning)
-        {
-            textView.setText("正在扫描设备");
-        }else
-        {
-            textView.setText("已停止扫描");
-        }
     }
-
-
-
 
 
     //Adapter
@@ -257,7 +243,7 @@ public class DeviceState extends Activity {
         TextView deviceAddress;
     }
 
-    // Device scan callback.
+
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
                 @Override

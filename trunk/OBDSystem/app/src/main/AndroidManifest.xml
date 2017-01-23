@@ -3,39 +3,44 @@
     package="com.michael.obdsystem">
 
 
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <!-- Required to check whether user has network connection or not -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-
     <!-- Dangerous Permissions -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".DeviceState">
+        <activity
+            android:name=".DeviceState"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".DeviceControl" />
+        <activity android:name=".NavigationActivity" />
+        <activity android:name=".DataShowActivity"></activity>
 
-        <activity android:name=".DeviceControl"></activity>
+        <service
+            android:name=".service.BluetoothLeService"
+            android:enabled="true"
+            android:exported="true" />
 
-        <service android:name=".service.BluetoothLeService"></service>
+
     </application>
 
 </manifest>

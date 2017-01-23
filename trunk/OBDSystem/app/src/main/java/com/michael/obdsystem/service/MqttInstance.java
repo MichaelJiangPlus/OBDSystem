@@ -25,7 +25,6 @@ public class MqttInstance {
         MqttInstance.host=host;
         MqttInstance.username=username;
         MqttInstance.password=password;
-
         try {
             if(instance!=null&&instance.isConnected()){
                 instance.disconnect();
