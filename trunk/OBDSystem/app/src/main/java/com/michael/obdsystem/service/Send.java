@@ -10,10 +10,10 @@ import com.michael.obdsystem.DeviceControl;
  * Created by Michael on 2016/7/22 0022.
  */
 public class Send extends AsyncTask<String, Integer, String> {
-    private DeviceControl deviceControl;
+    private BluetoothLeService bluetoothLeService;
     private String[] command =new String[]{"0105","010C","010D","010F","012F","015C","015E"};
-    public Send(DeviceControl deviceControl) {
-        this.deviceControl=deviceControl;
+    public Send(BluetoothLeService bluetoothLeService) {
+        this.bluetoothLeService=bluetoothLeService;
     }
 
 
@@ -28,8 +28,7 @@ public class Send extends AsyncTask<String, Integer, String> {
     protected String doInBackground(String... params) {
         int i=0;
         while (true){
-            deviceControl.sendString(command[i++]);
-            deviceControl.sendOrder("CarState","良好");
+            bluetoothLeService.sendString(command[i++]);
             try {
                 Thread.sleep(150);
             } catch (InterruptedException e) {

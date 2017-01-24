@@ -2,8 +2,6 @@ package com.michael.obdsystem;
 
 import android.Manifest;
 import android.app.Activity;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -27,7 +25,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,8 +44,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,23 +56,14 @@ public class DeviceControl extends Activity {
     private String uuid="";
 
     /*****蓝牙部分*****/
-
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-
     private BluetoothLeService mBluetoothLeService;
-    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
-    private boolean mConnected = false;
-    private BluetoothGattCharacteristic mNotifyCharacteristic;
-    private BluetoothGattCharacteristic mWriteCharacteristic;
-
-    private int i = 1;
-    byte[] WriteBytes = new byte[20];
     private String mDeviceName;
     private String mDeviceAddress;
-    private final String LIST_NAME = "NAME";
-    private final String LIST_UUID = "UUID";
     private final static String TAG = DeviceControl.class.getSimpleName();
+
+
 
     /*****MQTT*****/
     private final static int CONNECTED=1;
@@ -227,7 +213,7 @@ public class DeviceControl extends Activity {
         String result = "lat: " + point.getLatitude() + "  " + "lon: " + point.getLongitude();
         double lat = 30.3287750;//纬度
         double lon = 120.149800;//经度
-          //原版  接受GPS并且转换称百度坐标
+        //原版  接受GPS并且转换称百度坐标
 //        Point myPoint=CoordinateConversion.wgs_gcj_encrypts(point.getLatitude(), point.getLongitude());
 //        myPoint = CoordinateConversion.google_bd_encrypt(myPoint.getLat(), myPoint.getLng());
         Point myPoint= CoordinateConversion.wgs_gcj_encrypts(lat, lon);
@@ -323,10 +309,9 @@ public class DeviceControl extends Activity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Send send=new Send(deviceControl);
+                Send send=new Send(mBluetoothLeService);
                 send.execute();
                 btn_send.setVisibility(View.INVISIBLE);
-//                deviceControl.sendOrder("CarUUID",uuid);
             }
         });
 
@@ -346,7 +331,7 @@ public class DeviceControl extends Activity {
                 intent.putExtra(DeviceControl.EXTRAS_DEVICE_NAME, mDeviceName);
                 intent.putExtra(DeviceControl.EXTRAS_DEVICE_ADDRESS, mDeviceAddress);
                 startActivity(intent);
-                DeviceControl.this.onDestroy();
+                DeviceControl.getDeviceControl().onDestroy();
             }
         });
 
@@ -394,10 +379,6 @@ public class DeviceControl extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unbindService(mServiceConnection);
-        if(mBluetoothLeService != null)
-            mBluetoothLeService.disconnect();
-        mBluetoothLeService = null;
         if (locationManager != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -474,9 +455,15 @@ public class DeviceControl extends Activity {
         }
     }
 
+
     /*****蓝牙部分*****/
 
     /*蓝牙连接*/
+    //android.content.ServiceConnection是一个接口，实现（implementate）这个接口有2个方法需要重写（Override）。
+    // 一个是当Service成功绑定后会被回调的onServiceConnected()方法，
+    // 另一个是当Service解绑定或者Service被关闭时被回调的onServiceDisconnected()。
+    //前者（onServiceConnected()方法）会传入一个IBinder对象参数，
+    // 这个IBinder对象就是在Service的生命周期回调方法的onBind()方法中的返回值
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
@@ -495,30 +482,11 @@ public class DeviceControl extends Activity {
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
         }
-
     };
-
-
-
-    private void updateConnectionState(final int resourceId) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-//                dev_connection.setText(resourceId);
-            }
-        });
-    }
-
-    private void clearUI() {
-        //mDataField.setText("No Data...");
-    }
 
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
@@ -529,132 +497,14 @@ public class DeviceControl extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                mConnected = true;
-                updateConnectionState(R.string.connected);
-                //invalidateOptionsMenu();
-            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                mConnected = false;
-                updateConnectionState(R.string.disconnected);
-                //invalidateOptionsMenu();
-                clearUI();
-            } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-                // Show all the supported services and characteristics on the user interface.
-                displayGattServices(mBluetoothLeService.getSupportedGattServices());
-            } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                //System.out.println(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+            if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 String result = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
-                Log.i("ajx", result);
-                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
 
+                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
             }
         }
     };
 
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
-        if (gattServices == null) return;
-        String uuid = null;
-        String unknownServiceString = "未知服务";
-        String unknownCharaString = "未知特征";
-        ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
-        ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
-                = new ArrayList<ArrayList<HashMap<String, String>>>();
-        mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
-
-        // Loops through available GATT Services.
-        for (BluetoothGattService gattService : gattServices) {
-            HashMap<String, String> currentServiceData = new HashMap<String, String>();
-            uuid = gattService.getUuid().toString();
-            currentServiceData.put(
-                    LIST_NAME, lookup(uuid, unknownServiceString));
-            currentServiceData.put(LIST_UUID, uuid);
-            gattServiceData.add(currentServiceData);
-
-            ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
-                    new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics =
-                    gattService.getCharacteristics();
-            ArrayList<BluetoothGattCharacteristic> charas =
-                    new ArrayList<BluetoothGattCharacteristic>();
-
-            // Loops through available Characteristics.
-            for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                charas.add(gattCharacteristic);
-                HashMap<String, String> currentCharaData = new HashMap<String, String>();
-                uuid = gattCharacteristic.getUuid().toString();
-                currentCharaData.put(
-                        LIST_NAME, lookup(uuid, unknownCharaString));
-                currentCharaData.put(LIST_UUID, uuid);
-                gattCharacteristicGroupData.add(currentCharaData);//写接口
-                if(uuid.equals("0000fff1-0000-1000-8000-00805f9b34fb"))
-                {
-                    mWriteCharacteristic=gattCharacteristic;
-                }else if(uuid.equals("0000fff4-0000-1000-8000-00805f9b34fb"))//读回调接口
-                {
-                    mNotifyCharacteristic=gattCharacteristic;
-                    mBluetoothLeService.setCharacteristicNotification(
-                            mNotifyCharacteristic, true);
-                }
-
-            }
-            mGattCharacteristics.add(charas);
-            gattCharacteristicData.add(gattCharacteristicGroupData);
-        }
-
-        SimpleExpandableListAdapter gattServiceAdapter = new SimpleExpandableListAdapter(
-                this,
-                gattServiceData,
-                android.R.layout.simple_expandable_list_item_2,
-                new String[] {LIST_NAME, LIST_UUID},
-                new int[] { android.R.id.text1, android.R.id.text2 },
-                gattCharacteristicData,
-                android.R.layout.simple_expandable_list_item_2,
-                new String[] {LIST_NAME, LIST_UUID},
-                new int[] { android.R.id.text1, android.R.id.text2 }
-        );
-       // mGattServicesList.setAdapter(gattServiceAdapter);
-    }
-
-    ////////////////////////////////////////////////////////
-    private static HashMap<String, String> attributes = new HashMap();
-
-    static {
-        attributes.put("0000fff2-0000-1000-8000-00805f9b34fb", "Device OBDCYX Service");
-        attributes.put("0000fff1-0000-1000-8000-00805f9b34fb", "Device OBDCYX String");
-    }
-
-    public static String lookup(String uuid, String defaultName) {
-        String name = attributes.get(uuid);
-        return name == null ? defaultName : name;
-    }
-
-    public void sendString(String command) {
-        try {
-            if (mWriteCharacteristic != null) {
-                if (!command.matches("\\r$"))//如果末尾没有回车，自动补全
-                    command += "\r";
-                if (command.length() > 0) {
-                    byte[] WriteBytes;
-                    WriteBytes = command.getBytes();
-                    System.out.println("command:" + command);
-                    //WriteBytes = hex2byte(sendStr.getBytes());
-                    mWriteCharacteristic.setValue((byte) 0x00, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
-                    mWriteCharacteristic.setValue(WriteBytes);
-                    mBluetoothLeService.writeCharacteristic(mWriteCharacteristic);
-                }
-            } else {
-                System.out.println("写特性未实例化");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 }
 
 
-//android.content.ServiceConnection是一个接口，实现（implementate）这个接口有2个方法需要重写（Override）。
-// 一个是当Service成功绑定后会被回调的onServiceConnected()方法，
-// 另一个是当Service解绑定或者Service被关闭时被回调的onServiceDisconnected()。
-//前者（onServiceConnected()方法）会传入一个IBinder对象参数，
-// 这个IBinder对象就是在Service的生命周期回调方法的onBind()方法中的返回值
