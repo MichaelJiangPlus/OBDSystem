@@ -28,7 +28,6 @@ public class DeviceState extends Activity {
     private ListView listView;
     private Button buttonScan;
     private Button buttonStop;
-
     private Handler mHandler;
     private boolean mScanning;
     private static final long SCAN_PERIOD = 20000;//一次扫描时间设置
@@ -53,6 +52,7 @@ public class DeviceState extends Activity {
         this.buttonScan=(Button)findViewById(R.id.dev_btn1);
         this.buttonStop=(Button)findViewById(R.id.dev_btn2);
 
+
         //扫描时间控制
         mHandler = new Handler();
 
@@ -73,6 +73,7 @@ public class DeviceState extends Activity {
             }
         });
 
+
         /**
          * 将扫描到的设备放到列表中，如果点击列表中的某个设备则跳转到活动页面
          */
@@ -81,7 +82,7 @@ public class DeviceState extends Activity {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 final BluetoothDevice device = mLeDeviceListAdapter.getDevice(i);
                 if (device == null) return;
-                final Intent intent = new Intent(DeviceState.this, DeviceControl.class);
+                final Intent intent = new Intent(DeviceState.this, MainMenuActivity.class);
                 intent.putExtra(DeviceControl.EXTRAS_DEVICE_NAME, device.getName());
                 intent.putExtra(DeviceControl.EXTRAS_DEVICE_ADDRESS, device.getAddress());
                 if (mScanning) {
