@@ -346,11 +346,11 @@ public class BluetoothLeService extends Service {
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
-    public BluetoothLeService getmBluetoothLeService() {
+    public static BluetoothLeService getmBluetoothLeService() {
         return mBluetoothLeService;
     }
 
-    public void setmBluetoothLeService(BluetoothLeService mBluetoothLeService) {
+    public void  setmBluetoothLeService(BluetoothLeService mBluetoothLeService) {
         this.mBluetoothLeService = mBluetoothLeService;
     }
 
@@ -461,6 +461,8 @@ public class BluetoothLeService extends Service {
                 new String[] {LIST_NAME, LIST_UUID},
                 new int[] { android.R.id.text1, android.R.id.text2 }
         );
+        Send send=new Send(BluetoothLeService.getmBluetoothLeService());
+        send.execute();
     }
 
 

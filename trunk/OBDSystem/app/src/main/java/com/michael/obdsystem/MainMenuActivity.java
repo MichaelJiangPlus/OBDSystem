@@ -7,10 +7,12 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.michael.obdsystem.service.BluetoothLeService;
@@ -38,20 +40,18 @@ public class MainMenuActivity extends Activity {
         mainMenuActivity = this;
         TelephonyManager tm = (TelephonyManager) mainMenuActivity.getSystemService(TELEPHONY_SERVICE);
         uuid=tm.getSubscriberId();
-
         /*****获取要连接的蓝牙名称和地址*****/
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
     }
 
     private void init(){
-        ImageButton btn_obd = (ImageButton)findViewById(R.id.btn_obd);
-        ImageButton btn_map = (ImageButton)findViewById(R.id.btn_map);
-        ImageButton btn_obdlist = (ImageButton)findViewById(R.id.btn_obdlist);
+        ImageView btn_obd = (ImageView)findViewById(R.id.btn_obd);
+        ImageView btn_map = (ImageView)findViewById(R.id.btn_map);
+        ImageView btn_obdlist = (ImageView)findViewById(R.id.btn_obdlist);
         btn_obd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -73,6 +73,21 @@ public class MainMenuActivity extends Activity {
                 startActivity(myIntent);
             }
         });
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mBluetoothLeService != null) {
+            final boolean result = mBluetoothLeService.connect(mDeviceAddress);
+            Log.d(TAG, "Connect request result=" + result);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     /*****蓝牙部分*****/
@@ -101,5 +116,4 @@ public class MainMenuActivity extends Activity {
             mBluetoothLeService = null;
         }
     };
-
 }
