@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.telephony.TelephonyManager;
@@ -16,16 +17,17 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.michael.obdsystem.service.BluetoothLeService;
+import com.michael.obdsystem.service.MqttService;
 
 public class MainMenuActivity extends Activity {
+
+    MqttService mqttService ;
+
     /*****蓝牙部分*****/
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     private BluetoothLeService mBluetoothLeService;
-    private String mDeviceName;
     private String mDeviceAddress;
     private final static String TAG = MainMenuActivity.class.getSimpleName();
-    private String uuid="";
     public MainMenuActivity mainMenuActivity ;
 
     @Override
@@ -36,16 +38,10 @@ public class MainMenuActivity extends Activity {
         //全屏
         getWindow().setFlags(WindowManager.LayoutParams. FLAG_FULLSCREEN , WindowManager.LayoutParams. FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main_menu);
-        init();
         mainMenuActivity = this;
-        TelephonyManager tm = (TelephonyManager) mainMenuActivity.getSystemService(TELEPHONY_SERVICE);
-        uuid=tm.getSubscriberId();
-        /*****获取要连接的蓝牙名称和地址*****/
-        final Intent intent = getIntent();
-        mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+        init();
+        linkBluetooth();
+        linkMqtt();
     }
 
     private void init(){
@@ -75,9 +71,26 @@ public class MainMenuActivity extends Activity {
         });
     }
 
+    private void linkBluetooth(){
+        /*****获取要连接的蓝牙名称和地址*****/
+        final Intent intent = getIntent();
+        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+    }
+
+    private void linkMqtt(){
+        /*****连接MQTT信息*****/
+        Intent mqttServiceIntent = new Intent(this, MqttService.class);
+        bindService(mqttServiceIntent, mqttServiceConnection, BIND_AUTO_CREATE);
+    }
+
 
     @Override
     protected void onResume() {
+        if(getRequestedOrientation()!= ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
         super.onResume();
         if (mBluetoothLeService != null) {
             final boolean result = mBluetoothLeService.connect(mDeviceAddress);
@@ -89,6 +102,7 @@ public class MainMenuActivity extends Activity {
     protected void onPause() {
         super.onPause();
     }
+
 
     /*****蓝牙部分*****/
     /*蓝牙连接*/
@@ -116,4 +130,20 @@ public class MainMenuActivity extends Activity {
             mBluetoothLeService = null;
         }
     };
+
+
+    private final ServiceConnection mqttServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mqttService = ((MqttService.LocalBinder)service).getService();
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
+
 }

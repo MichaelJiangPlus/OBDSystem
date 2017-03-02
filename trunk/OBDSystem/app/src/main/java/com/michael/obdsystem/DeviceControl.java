@@ -52,16 +52,10 @@ public class DeviceControl extends Activity {
     /*****自定义类*****/
     private DataAnalysed dataAnalysed;
     private OBDCProtocol obdcProtocol;
-    private static DeviceControl deviceControl = null;
-    private final static String TAG = DeviceControl.class.getSimpleName();
 
     /*****蓝牙部分*****/
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-    private BluetoothLeService mBluetoothLeService;
-    private String mDeviceName;
-    private String mDeviceAddress;
-    private String uuid="";
 
 
 
@@ -78,9 +72,6 @@ public class DeviceControl extends Activity {
     private TextView txt_OilUse;
     private DashBoard myview;
 
-    public static DeviceControl getDeviceControl() {
-        return deviceControl;
-    }
 
 
 
@@ -118,15 +109,9 @@ public class DeviceControl extends Activity {
         //全屏
         getWindow().setFlags(WindowManager.LayoutParams. FLAG_FULLSCREEN , WindowManager.LayoutParams. FLAG_FULLSCREEN);
         setContentView(R.layout.activity_design);
-
         dataAnalysed = new DataAnalysed();
         obdcProtocol = new OBDCProtocol();
-        deviceControl = this;
-
-        TelephonyManager tm = (TelephonyManager) deviceControl.getSystemService(TELEPHONY_SERVICE);
-        uuid=tm.getSubscriberId();
         init();
-
     }
 
     @Override
@@ -151,7 +136,6 @@ public class DeviceControl extends Activity {
 
     /**
      * 数据处理,在这里处理我们刚获得的数据
-     * @param data
      */
     private void displayData(String data) {
         if (data != null) {
@@ -161,9 +145,8 @@ public class DeviceControl extends Activity {
             int a=dataAnalysed.hexTodec(result[2]);//A
             int b=dataAnalysed.hexTodec(result[3]);//B
             DecimalFormat df   = new DecimalFormat("######0.00");
-            double temp=obdcProtocol.Mode01_calculate(command,a,b,0);
+            double temp= OBDCProtocol.Mode01_calculate(command,a,b,0);
             String sum=df.format(temp);
-//            Toast.makeText(DeviceControl.this,command,Toast.LENGTH_LONG).show();
             switch (command){
                 case "05":{
                     txt_CoolantTemperature.setText(info_CoolantTemperature+sum+"°C");
@@ -174,7 +157,6 @@ public class DeviceControl extends Activity {
                     break;
                 }
                 case "0D":{
-//                    txt_speed.setText(sum+"Km/h");
                     float pf = Float.valueOf(sum) / 236.5f;
                     myview.setCurrentStatus(pf);//旋转角度
                     myview.invalidate();//显示值的变化
@@ -189,7 +171,6 @@ public class DeviceControl extends Activity {
                     break;
                 }
                 case "5C":{
-//                    txt_EnginTemperature.setText(sum+"°C");
                     break;
                 }
                 case "5E":{
@@ -216,11 +197,11 @@ public class DeviceControl extends Activity {
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 String result = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
-
-                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+                displayData(result);
             }
         }
     };
+
 }
 
 

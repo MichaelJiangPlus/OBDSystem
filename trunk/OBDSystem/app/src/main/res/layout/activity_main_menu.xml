@@ -12,30 +12,35 @@
         android:layout_height="wrap_content"
         android:id="@+id/imageView"
         android:src="@drawable/car"
+        android:layout_marginStart="53dp"
         android:layout_centerVertical="true"
         android:layout_alignParentStart="true" />
 
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <ImageView
         android:id="@+id/btn_obd"
-        android:src="@drawable/button1"
-        android:layout_above="@+id/imageView"
-        android:layout_alignStart="@+id/btn_obdlist" />
-
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn_map"
-        android:src="@drawable/button2"
+        android:src="@drawable/whiteobd"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="91dp"
         android:layout_centerVertical="true"
-        android:layout_alignParentEnd="true" />
-
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn_obdlist"
-        android:src="@drawable/button3"
-        android:layout_below="@+id/imageView"
         android:layout_toEndOf="@+id/imageView" />
+
+    <ImageView
+        android:id="@+id/btn_obdlist"
+        android:src="@drawable/list"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_alignTop="@+id/btn_obd"
+        android:layout_toEndOf="@+id/btn_obd"
+        android:layout_marginStart="60dp" />
+
+    <ImageView
+        android:id="@+id/btn_map"
+        android:src="@drawable/lead"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_alignTop="@+id/btn_obdlist"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="60dp" />
+
 </RelativeLayout>

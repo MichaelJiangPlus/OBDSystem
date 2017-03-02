@@ -12,26 +12,20 @@
         android:id="@+id/dev_ll"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
-        <TextView
-            android:id="@+id/dev_txt1"
-            android:text="@string/Scan_str1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+
         <Button
             android:id="@+id/dev_btn1"
             android:text="Scan"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
+
         <Button
             android:id="@+id/dev_btn2"
             android:text="Stop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-        <TextView
-            android:id="@+id/dev_txt2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        </LinearLayout>
+
+    </LinearLayout>
 
     <ListView
         android:id="@+id/dev_lv1"
@@ -40,7 +34,6 @@
         android:layout_below="@id/dev_ll"></ListView>
     <TextView
         android:id="@+id/dev_txt3"
-        android:text="当前连接的服务的状态："
         android:layout_below="@id/dev_lv1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
