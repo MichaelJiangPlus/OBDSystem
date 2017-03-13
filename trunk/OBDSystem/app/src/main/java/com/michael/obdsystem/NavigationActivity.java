@@ -89,7 +89,7 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
 
     /*******Android相关*******/
     private EditText edt_search;
-
+    private boolean isLead = false;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,7 +98,7 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
         //全屏
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        //注册百度SDK
+        //加载百度SDK
         SDKInitializer.initialize(getApplicationContext());
 
         setContentView(R.layout.activity_navigation);
@@ -194,9 +194,9 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
                 this.showLocation(myPoint);
             }
 
-            //provider为位置提供器，5000为毫秒数=5秒，1为一米，locationlistener为要做的事情清单。
+            //provider为位置提供器，2000为毫秒数=5秒，1为一米，locationlistener为要做的事情清单。
             //位置提供器，如：GPS，NetWork。
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
+            locationManager.requestLocationUpdates(provider, 2000, 10, locationListener);
         }
     }
 
@@ -211,23 +211,28 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
         //两者经纬度有偏差，所以把自己获取的经纬度转换为百度的经纬度
         latLngpoint = new LatLng(myPoint.getLat() ,myPoint.getLng());
 
+//        latLngpoint = new LatLng(point.getLatitude(),point.getLongitude());
         //构建标记图标
         BitmapDescriptor bitmap = BitmapDescriptorFactory
                 .fromResource(R.drawable.icon_gcoding);
-
 
         //构建标记选项，用于在地图上添加标记
         OverlayOptions option = new MarkerOptions()
                 .position(latLngpoint)
                 .icon(bitmap)
                 .zIndex(18);
+
+        if(!isLead){
+            mBaidumap.clear();
+        }
+
         //在地图上添加标记，并显示
         mBaidumap.addOverlay(option);
+
 
         //更新位置
         MapStatusUpdate mapStatus = MapStatusUpdateFactory.newLatLngZoom(latLngpoint, 18);
         mBaidumap.setMapStatus(mapStatus);
-
 
         //根据经纬度获取目标地址所在城市和街道等
         LatLon2City(latLngpoint);
@@ -295,10 +300,12 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
         //判断能不能找的到该地址
         if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
             Toast.makeText(NavigationActivity.this, "抱歉，未找到结果", Toast.LENGTH_SHORT).show();
+            isLead = false;
         }
         // 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
         if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
             result.getSuggestAddrInfo();
+            isLead = false;
             return;
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
@@ -325,7 +332,6 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
             } else if ( result.getRouteLines().size() == 1 ) {
                 //只有一个直接显示路线
                 route = result.getRouteLines().get(0);
-
                 //在地图上显示路线
                 DrivingRouteOverlay overlay = new MyDrivingRouteOverlay(mBaidumap);
                 routeOverlay = overlay;
@@ -337,6 +343,7 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
                 Log.d("route result", "结果数<0" );
                 return;
             }
+            isLead = true;
         }
     }
 
@@ -390,7 +397,7 @@ public class NavigationActivity extends Activity  implements BaiduMap.OnMapClick
         }
         else {
             if(locationManager!=null){
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 10, locationListener);
             }
         }
     }

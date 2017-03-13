@@ -36,7 +36,6 @@ import java.util.UUID;
 public class BluetoothLeService extends Service {
 
     private final static String TAG = BluetoothLeService.class.getSimpleName();
-
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
@@ -66,6 +65,20 @@ public class BluetoothLeService extends Service {
     public final static UUID UUID_OBDC_DEVICE = UUID.fromString(OBDCProtocol.UUID_OBDC_DEVICE_CHA1);
 
 
+    public static BluetoothLeService getmBluetoothLeService() {
+        return mBluetoothLeService;
+    }
+
+    private static BluetoothLeService mBluetoothLeService;
+
+    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+    private boolean mConnected = false;
+    private BluetoothGattCharacteristic mNotifyCharacteristic;
+    private BluetoothGattCharacteristic mWriteCharacteristic;
+
+    private final String LIST_NAME = "NAME";
+    private final String LIST_UUID = "UUID";
+
     private final IBinder mBinder = new LocalBinder();
 
 
@@ -82,7 +95,6 @@ public class BluetoothLeService extends Service {
         //获取适配器
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            //Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             Toast.makeText(this, "BLE Adapter获取失败", Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -156,7 +168,6 @@ public class BluetoothLeService extends Service {
             } else {
                 return false;
             }
-
         }
 
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
@@ -202,7 +213,6 @@ public class BluetoothLeService extends Service {
         // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
         //else if (UUID_OBDC_DEVICE.equals(characteristic.getUuid())){
         //获取到目标设备OBDC发送的特征
-
         //}
         // For all other profiles, writes the data formatted in HEX.
         final byte[] data = characteristic.getValue();
@@ -287,6 +297,7 @@ public class BluetoothLeService extends Service {
 
         }
     };
+
     ////////////////////////////////////////////////////////////////////////////////////////
     public class LocalBinder extends Binder {
         public BluetoothLeService getService() {
@@ -294,10 +305,8 @@ public class BluetoothLeService extends Service {
         }
     }
 
-
-
-
     ////////////////////////////////////////////////////////////////////
+
     public void readCharacteristic(BluetoothGattCharacteristic characteristic) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
@@ -336,46 +345,6 @@ public class BluetoothLeService extends Service {
         if (mBluetoothGatt == null) return null;
         displayGattServices(mBluetoothGatt.getServices());
         return mBluetoothGatt.getServices();
-    }
-
-
-
-    ///////
-    /*****蓝牙部分*****/
-
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-
-    public static BluetoothLeService getmBluetoothLeService() {
-        return mBluetoothLeService;
-    }
-
-    public void  setmBluetoothLeService(BluetoothLeService mBluetoothLeService) {
-        this.mBluetoothLeService = mBluetoothLeService;
-    }
-
-    private static BluetoothLeService mBluetoothLeService;
-
-
-    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
-    private boolean mConnected = false;
-    private BluetoothGattCharacteristic mNotifyCharacteristic;
-    private BluetoothGattCharacteristic mWriteCharacteristic;
-
-    private int i = 1;
-    byte[] WriteBytes = new byte[20];
-    private String mDeviceName;
-    private String mDeviceAddress;
-    private final String LIST_NAME = "NAME";
-    private final String LIST_UUID = "UUID";
-
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-//        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-//        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-//        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
     }
 
 
@@ -473,11 +442,17 @@ public class BluetoothLeService extends Service {
         attributes.put("0000fff2-0000-1000-8000-00805f9b34fb", "Device OBDCYX Service");
         attributes.put("0000fff1-0000-1000-8000-00805f9b34fb", "Device OBDCYX String");
     }
+
     public static String lookup(String uuid, String defaultName) {
         String name = attributes.get(uuid);
         return name == null ? defaultName : name;
     }
 
+    private static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
+        return intentFilter;
+    }
 
     public void sendString(String command) {
         try {
@@ -500,7 +475,4 @@ public class BluetoothLeService extends Service {
             e.printStackTrace();
         }
     }
-
-
-
 }

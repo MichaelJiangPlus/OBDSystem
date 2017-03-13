@@ -1,0 +1,38 @@
+*** Creating Trace Output File '.\Output\OBD2模拟.tra' Ok.
+### Preparing for ADS-LD.
+### Creating ADS-LD Command Line
+### List of Objects: adding '".\output\stm32f10x_it.o"'
+### List of Objects: adding '".\output\main.o"'
+### List of Objects: adding '".\output\iso15765_4.o"'
+### List of Objects: adding '".\output\iso14230_4.o"'
+### List of Objects: adding '".\output\iso9141_2.o"'
+### List of Objects: adding '".\output\delay.o"'
+### List of Objects: adding '".\output\bsp.o"'
+### List of Objects: adding '".\output\ledcommand.o"'
+### List of Objects: adding '".\output\stm32f10x_usart.o"'
+### List of Objects: adding '".\output\misc.o"'
+### List of Objects: adding '".\output\stm32f10x_can.o"'
+### List of Objects: adding '".\output\stm32f10x_gpio.o"'
+### List of Objects: adding '".\output\stm32f10x_iwdg.o"'
+### List of Objects: adding '".\output\stm32f10x_rcc.o"'
+### List of Objects: adding '".\output\stm32f10x_tim.o"'
+### List of Objects: adding '".\output\core_cm3.o"'
+### List of Objects: adding '".\output\system_stm32f10x.o"'
+### List of Objects: adding '".\output\startup_stm32f10x_md.o"'
+### List of Objects: adding '".\output\tab.o"'
+### List of Objects: adding '".\output\chinese.o"'
+### ADS-LD Command completed:
+--cpu Cortex-M3 ".\output\stm32f10x_it.o" ".\output\main.o" ".\output\iso15765_4.o" ".\output\iso14230_4.o" ".\output\iso9141_2.o" ".\output\delay.o" ".\output\bsp.o" ".\output\ledcommand.o" ".\output\stm32f10x_usart.o" ".\output\misc.o" ".\output\stm32f10x_can.o" ".\output\stm32f10x_gpio.o" ".\output\stm32f10x_iwdg.o" ".\output\stm32f10x_rcc.o" ".\output\stm32f10x_tim.o" ".\output\core_cm3.o" ".\output\system_stm32f10x.o" ".\output\startup_stm32f10x_md.o" ".\output\tab.o" ".\output\chinese.o" --strict --scatter ".\Output\OBD2模拟.sct" 
+--autoat --summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\Output\OBD2模拟.map" -o ".\Output\OBD2模拟.axf"### Preparing Environment (PrepEnvAds)
+### ADS-LD Output File: '.\Output\OBD2模拟.axf'
+### ADS-LD Command File: '.\Output\OBD2模拟.lnp'
+### Checking for dirty Components...
+### Creating CmdFile '.\Output\OBD2模拟.lnp', Handle=0x0000028C
+### Writing '.lnp' file
+### ADS-LD Command file '.\Output\OBD2模拟.lnp' is ready.
+### ADS-LD: About to start ADS-LD Thread.
+### ADS-LD: executed with 0 errors
+### Updating obj list
+### LDADS_file() completed.

@@ -1,0 +1,4 @@
+--cpu Cortex-M3 ".\output\stm32f10x_it.o" ".\output\main.o" ".\output\iso15765_4.o" ".\output\iso14230_4.o" ".\output\iso9141_2.o" ".\output\delay.o" ".\output\bsp.o" ".\output\ledcommand.o" ".\output\stm32f10x_usart.o" ".\output\misc.o" ".\output\stm32f10x_can.o" ".\output\stm32f10x_gpio.o" ".\output\stm32f10x_iwdg.o" ".\output\stm32f10x_rcc.o" ".\output\stm32f10x_tim.o" ".\output\core_cm3.o" ".\output\system_stm32f10x.o" ".\output\startup_stm32f10x_md.o" ".\output\tab.o" ".\output\chinese.o" --strict --scatter ".\Output\OBD2Ä£Äâ.sct" 
+--autoat --summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\Output\OBD2Ä£Äâ.map" -o ".\Output\OBD2Ä£Äâ.axf"

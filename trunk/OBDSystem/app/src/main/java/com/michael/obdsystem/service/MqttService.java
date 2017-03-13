@@ -125,7 +125,7 @@ public class MqttService extends Service {
         return options;
     }
 
-    private class ConnectThread extends Thread {
+    private class ConnectThread extends Thread{
         @Override
         public void run(){
             if(client==null){
@@ -182,7 +182,7 @@ public class MqttService extends Service {
         if (data != null) {
             byte[][] result;
             result = dataAnalysed.analysisDate(data);
-            String command=new String(result[1]);//命令位
+            String command=new String (result[1]);//命令位
             int a=dataAnalysed.hexTodec(result[2]);//A
             int b=dataAnalysed.hexTodec(result[3]);//B
             DecimalFormat df   = new DecimalFormat("######0.00");
@@ -190,31 +190,31 @@ public class MqttService extends Service {
             String sum=df.format(temp);
             switch (command){
                 case "05":{
-                    this.sendOrder("0105", String.valueOf(sum));
+                    this.sendOrder("0105",String.valueOf(sum));
                     break;
                 }
                 case "0C":{
-                    this.sendOrder("010C", String.valueOf(sum));
+                    this.sendOrder("010C",String.valueOf(sum));
                     break;
                 }
                 case "0D":{
-                    this.sendOrder("010D", String.valueOf(sum));
+                    this.sendOrder("010D",String.valueOf(sum));
                     break;
                 }
                 case "0F":{
-                    this.sendOrder("010F", String.valueOf(sum));
+                    this.sendOrder("010F",String.valueOf(sum));
                     break;
                 }
                 case "2F":{
-                    this.sendOrder("012F", String.valueOf(sum));
+                    this.sendOrder("012F",String.valueOf(sum));
                     break;
                 }
                 case "5C":{
-                    this.sendOrder("015C", String.valueOf(sum));
+                    this.sendOrder("015C",String.valueOf(sum));
                     break;
                 }
                 case "5E":{
-                    this.sendOrder("015E", String.valueOf(sum));
+                    this.sendOrder("015E",String.valueOf(sum));
                     break;
                 }
                 default:break;

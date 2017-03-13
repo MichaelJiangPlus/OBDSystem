@@ -37,7 +37,6 @@ public class DataShowActivity extends Activity {
     String[] command = {"0105","010C","010D","010F","012F","015C","015E"};
     String[] info = {"引擎冷却液温度","引擎转速","车辆速度","油箱空气温度","油量液位情况","引擎油温","引擎油量消耗速率"};
     String[] data = {"-40","0","0","-40","0","-40","0"};
-
     /***** Android Util*****/
     DataAnalysed dataAnalysed = new DataAnalysed();
     DataAdapter adapter;
@@ -147,5 +146,6 @@ public class DataShowActivity extends Activity {
             }
         }
     };
+
 }
 

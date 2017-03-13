@@ -58,7 +58,6 @@ public class DeviceControl extends Activity {
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
 
-
     /*****界面相关控件*****/
     private String info_EngineTurn;
     private String info_OilSurplus;
