@@ -80,6 +80,9 @@ public class OBDCProtocol {
             return -1;
 
     }
+    public static HashMap<String,String> getMode1(){
+        return Mode01;
+    }
 
     static {
         //mode01

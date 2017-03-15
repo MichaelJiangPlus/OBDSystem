@@ -11,11 +11,14 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import me.michaeljiang.obdsystem.R;
+import me.michaeljiang.obdsystem.util.AppSetting;
 
 public class NavigationFragment extends Fragment {
-    private static final String TAG = "NavigationFragment";
-    private static final int NAVIGATION_FRAGMENT_WHAT = 12;
     private Handler uiHandle = null;
+    public Handler getUiHandle() {
+        return uiHandle;
+    }
+
     public static NavigationFragment newInstance(String param1) {
         NavigationFragment fragment = new NavigationFragment();
         Bundle args = new Bundle();
@@ -24,8 +27,8 @@ public class NavigationFragment extends Fragment {
         return fragment;
     }
 
-    private NavigationFragment() {
-
+    public NavigationFragment() {
+        uiHandle = new UiHandle();
     }
 
     @Override
@@ -44,11 +47,13 @@ public class NavigationFragment extends Fragment {
         return view;
     }
 
+
+
     private class UiHandle extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            Log.d(TAG,"getMessage");
-            if(msg.what== NAVIGATION_FRAGMENT_WHAT){
+            Log.d(AppSetting.LOG_NAVIGATION_FRAGMENT_TAG,"getMessage");
+            if(msg.what== AppSetting.MESSAGE_NAVIGATION_FRAGMENT_KEY){
                 //ui更新
             }
             super.handleMessage(msg);

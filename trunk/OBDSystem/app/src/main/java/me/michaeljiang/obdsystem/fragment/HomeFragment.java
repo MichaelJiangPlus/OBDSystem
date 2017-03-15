@@ -11,11 +11,14 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import me.michaeljiang.obdsystem.R;
+import me.michaeljiang.obdsystem.util.AppSetting;
 
 public class HomeFragment extends Fragment {
-    private static final String TAG = "HomeFragment";
-    private static final int HOME_FRAGMENT_WHAT = 11;
     private Handler uiHandle = null;
+    public Handler getUiHandle() {
+        return uiHandle;
+    }
+
     public static HomeFragment newInstance(String param1) {
         HomeFragment fragment = new HomeFragment();
         Bundle args = new Bundle();
@@ -24,8 +27,8 @@ public class HomeFragment extends Fragment {
         return fragment;
     }
 
-    private HomeFragment() {
-
+    public HomeFragment() {
+        uiHandle = new UiHandle();
     }
 
     @Override
@@ -44,11 +47,13 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+
+
     private class UiHandle extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            Log.d(TAG,"getMessage");
-            if(msg.what== HOME_FRAGMENT_WHAT){
+            Log.d(AppSetting.LOG_HOME_FRAGMENT_TAG,"getMessage");
+            if(msg.what== AppSetting.MESSAGE_HOME_FRAGMENT_KEY){
                 //ui更新
             }
             super.handleMessage(msg);

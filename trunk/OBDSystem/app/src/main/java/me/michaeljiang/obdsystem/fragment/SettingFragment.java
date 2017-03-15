@@ -11,12 +11,15 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import me.michaeljiang.obdsystem.R;
+import me.michaeljiang.obdsystem.util.AppSetting;
 
 
 public class SettingFragment extends Fragment {
-    private static final int SETTING_FRAGMENT_WHAT = 15;
-    private static final String TAG = "SettingFragment";
     private Handler uiHandle = null;
+    public Handler getUiHandle() {
+        return uiHandle;
+    }
+
     public static SettingFragment newInstance(String param1) {
         SettingFragment fragment = new SettingFragment();
         Bundle args = new Bundle();
@@ -25,8 +28,8 @@ public class SettingFragment extends Fragment {
         return fragment;
     }
 
-    private SettingFragment() {
-
+    public SettingFragment() {
+        uiHandle = new UiHandle();
     }
 
     @Override
@@ -45,11 +48,13 @@ public class SettingFragment extends Fragment {
         return view;
     }
 
+
+
     private class UiHandle extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            Log.d(TAG,"getMessage");
-            if(msg.what== SETTING_FRAGMENT_WHAT){
+            Log.d(AppSetting.LOG_SETTING_FRAGMENT_TAG,"getMessage");
+            if(msg.what== AppSetting.MESSAGE_SETTING_FRAGMENT_KEY){
                 //ui更新
             }
             super.handleMessage(msg);

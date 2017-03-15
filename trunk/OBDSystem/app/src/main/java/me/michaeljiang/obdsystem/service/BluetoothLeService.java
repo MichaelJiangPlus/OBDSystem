@@ -34,7 +34,6 @@ import me.michaeljiang.obdsystem.R;
 import me.michaeljiang.obdsystem.util.OBDCProtocol;
 
 
-
 public class BluetoothLeService extends Service {
 
     private final static String TAG = BluetoothLeService.class.getSimpleName();

@@ -6,7 +6,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -21,6 +20,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import me.michaeljiang.obdsystem.model.LeDeviceListAdapter;
+import me.michaeljiang.obdsystem.util.AppSetting;
 
 public class DeviceState extends AppCompatActivity {
     private ListView listView;
@@ -80,8 +80,8 @@ public class DeviceState extends AppCompatActivity {
                 final BluetoothDevice device = mLeDeviceListAdapter.getDevice(i);
                 if (device == null) return;
                 final Intent intent = new Intent(DeviceState.this, MainActivity.class);
-                intent.putExtra(MainActivity.EXTRAS_DEVICE_NAME, device.getName());
-                intent.putExtra(MainActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+                intent.putExtra(AppSetting.BLUETOOTH_DEVICE_NAME, device.getName());
+                intent.putExtra(AppSetting.BLUETOOTH_DEVICE_ADDRESS, device.getAddress());
                 if (mScanning) {
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     mScanning = false;
