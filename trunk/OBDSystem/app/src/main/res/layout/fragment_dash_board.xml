@@ -2,8 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    tools:context="me.michaeljiang.obdsystem.fragment.DashBoardFragment">
+    tools:context="me.michaeljiang.obdsystem.me.michaeljiang.obddevelopmentassistant.activity.fragment.DashBoardFragment">
 
     <LinearLayout
         android:orientation="vertical"
@@ -15,28 +14,12 @@
             android:layout_height="match_parent"
             android:layout_alignParentTop="true"
             android:layout_alignParentStart="true"
-            android:layout_weight="4">
-            <ImageView
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:src="@drawable/design_dot"
-                android:adjustViewBounds="true"
-                android:scaleType="centerInside"
-                android:id="@+id/imageView9"
-                />
-            <me.michaeljiang.obdsystem.view.DashBoard
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:src="@drawable/design_needle"
-                android:scaleType="centerInside"
-                android:id="@+id/frame" />
-        </FrameLayout>
+            android:layout_weight="4"></FrameLayout>
 
         <ListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@id/android:list"
-            android:layout_weight="6"/>
+            android:id="@id/android:list" />
     </LinearLayout>
 
 </FrameLayout>

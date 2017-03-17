@@ -1,13 +1,12 @@
 package me.michaeljiang.obdsystem;
 
+import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -18,20 +17,27 @@ import android.widget.Toast;
 
 import com.ashokvarma.bottomnavigation.BottomNavigationBar;
 import com.ashokvarma.bottomnavigation.BottomNavigationItem;
+import com.google.gson.Gson;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import me.michaeljiang.obdsystem.fragment.CarFragment;
 import me.michaeljiang.obdsystem.fragment.DashBoardFragment;
-import me.michaeljiang.obdsystem.fragment.HomeFragment;
+import me.michaeljiang.obdsystem.fragment.CarFragment;
 import me.michaeljiang.obdsystem.fragment.NavigationFragment;
-import me.michaeljiang.obdsystem.fragment.SettingFragment;
 import me.michaeljiang.obdsystem.model.CarData;
 import me.michaeljiang.obdsystem.service.BluetoothLeService;
 import me.michaeljiang.obdsystem.service.MqttService;
 import me.michaeljiang.obdsystem.util.AppSetting;
 import me.michaeljiang.obdsystem.util.DataAnalysed;
 import me.michaeljiang.obdsystem.util.OBDCProtocol;
+
+/**
+ * UIHandle更新是个问题  需要重新刷新
+ */
 
 public class MainActivity extends AppCompatActivity {
     /*****常用变量*****/
@@ -46,20 +52,16 @@ public class MainActivity extends AppCompatActivity {
     public Handler getUiHandle() {
         return uiHandle;
     }
-    private Handler carFragmentHandle = null;
-    private Handler dashBoardFragmentHandle = null;
-    private Handler homeFragmentHandle = null;
-    private Handler navigationFragmentHandle = null;
-    private Handler settingFragmentHandle = null;
 
     /*****碎片布局*****/
     private FragmentManager fragmentManager;
     private FragmentTransaction fragmentTransaction;
-    private HomeFragment homeFragment = null;
     private DashBoardFragment dashBoardFragment = null;
     private NavigationFragment navigationFragment = null;
     private CarFragment carFragment = null ;
-    private SettingFragment settingFragment = null;
+    private  int postion = 0;
+    private List<Fragment> fragmentList = new ArrayList<>();
+
 
     /*****蓝牙部分*****/
     private BluetoothLeService mBluetoothLeService;
@@ -67,14 +69,19 @@ public class MainActivity extends AppCompatActivity {
 
     /*****MQTT部分*****/
     MqttService mqttService ;
+    private Gson gson = new Gson();
 
     /*****数据解析*****/
     DataAnalysed dataAnalysed = new DataAnalysed();
+    private List<CarData> carDataList = new ArrayList<>();
+    private Map<String,CarData> carDataMap = new HashMap<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getWindow().setFormat(PixelFormat.TRANSLUCENT);
         mainActivity = this;
         initActivity();
         initFragment();
@@ -125,62 +132,75 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationBar.setBackgroundStyle(BottomNavigationBar.BACKGROUND_STYLE_STATIC);
 
         bottomNavigationBar
-                .addItem(new BottomNavigationItem(R.drawable.ic_home_white_24dp, "主页"))
+//                .addItem(new BottomNavigationItem(R.drawable.ic_home_white_24dp, "主页"))
                 .addItem(new BottomNavigationItem(R.drawable.ic_navigation_white_32, "导航"))
-                .addItem(new BottomNavigationItem(R.drawable.ic_dashboard_white_32, "仪表"))
+                .addItem(new BottomNavigationItem(R.drawable.ic_dashboard_white_32, "检测"))
                 .addItem(new BottomNavigationItem(R.drawable.ic_car_white_32, "爱车"))
-                .addItem(new BottomNavigationItem(R.drawable.ic_setting_white_32, "设置"))
+//                .addItem(new BottomNavigationItem(R.drawable.ic_setting_white_32, "设置"))
                 .initialise();
 
         bottomNavigationBar.setTabSelectedListener(new BottomNavigationBar.OnTabSelectedListener(){
             @Override
             public void onTabSelected(int position) {
                 Log.d(AppSetting.OBD_SYSTEM_TAG, "onTabSelected() called with: " + "position = [" + position + "]");
-//                clearFragment();
+                getMainActivity().postion = position;
+                clearFragment();
                 fragmentTransaction = fragmentManager.beginTransaction();
                 switch (position){
+//                    case 0:{
+//                        if (homeFragment == null) {
+//                            homeFragment = HomeFragment.newInstance("Home");
+//                            fragmentTransaction.add(R.id.tb, homeFragment);
+//                        }
+//                        else {
+//                            fragmentTransaction.show(homeFragment);
+//                        }
+//                        fragmentTransaction.commit();
+//                        break;
+//                    }
                     case 0:{
-                        if (homeFragment == null) {
-                            homeFragment = HomeFragment.newInstance("Home");
+                        if (navigationFragment == null) {
+                            navigationFragment = NavigationFragment.newInstance("Location");
+                            fragmentTransaction.add(R.id.tb, navigationFragment);
                         }
-                        fragmentTransaction.replace(R.id.tb, homeFragment);
+                        else {
+                            fragmentTransaction.show(navigationFragment);
+                        }
                         fragmentTransaction.commit();
                         break;
                     }
                     case 1:{
-                        if (navigationFragment == null) {
-                            navigationFragment = NavigationFragment.newInstance("Location");
+                        if (dashBoardFragment == null) {
+                            dashBoardFragment = DashBoardFragment.newInstance("DashBoard");
+                            fragmentTransaction.add(R.id.tb, dashBoardFragment);
                         }
-                        fragmentTransaction.replace(R.id.tb, navigationFragment);
+                        else {
+                            fragmentTransaction.show(dashBoardFragment);
+                        }
                         fragmentTransaction.commit();
                         break;
                     }
                     case 2:{
-                        if (dashBoardFragment == null) {
-                            dashBoardFragment = DashBoardFragment.newInstance("DashBoard");
-                            dashBoardFragmentHandle = dashBoardFragment.getUiHandle();
-                        }
-                        fragmentTransaction.replace(R.id.tb, dashBoardFragment);
-                        fragmentTransaction.commit();
-
-                        break;
-                    }
-                    case 3:{
                         if (carFragment == null) {
                             carFragment = CarFragment.newInstance("MyCar");
+                            fragmentTransaction.add(R.id.tb, carFragment);
                         }
-                        fragmentTransaction.replace(R.id.tb, carFragment);
+                        else
+                            fragmentTransaction.show(carFragment);
                         fragmentTransaction.commit();
                         break;
                     }
-                    case 4:{
-                        if (settingFragment == null) {
-                            settingFragment = SettingFragment.newInstance("Setting");
-                        }
-                        fragmentTransaction.replace(R.id.tb, settingFragment);
-                        fragmentTransaction.commit();
-                        break;
-                    }
+//                    case 4:{
+//                        if (settingFragment == null) {
+//                            settingFragment = SettingFragment.newInstance("Setting");
+//                            fragmentTransaction.add(R.id.tb, settingFragment);
+//                        }
+//                        else {
+//                            fragmentTransaction.show(settingFragment);
+//                        }
+//                        fragmentTransaction.commit();
+//                        break;
+//                    }
                 }
 
             }
@@ -204,17 +224,32 @@ public class MainActivity extends AppCompatActivity {
     private void initFragment(){
         fragmentManager = getFragmentManager();
         fragmentTransaction = fragmentManager.beginTransaction();
-        homeFragment = HomeFragment.newInstance("Home");
-        fragmentTransaction.add(R.id.tb, homeFragment);
+//        homeFragment = HomeFragment.newInstance("Home");
+//        fragmentTransaction.add(R.id.tb, homeFragment);
+        navigationFragment = NavigationFragment.newInstance("Location");
+        fragmentTransaction.add(R.id.tb, navigationFragment);
+        fragmentTransaction.commit();
+        clearFragment();
+        fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.show(navigationFragment);
         fragmentTransaction.commit();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+//        super.onSaveInstanceState(outState);
+    }
+
     private void clearFragment(){
-        carFragmentHandle = null;
-        dashBoardFragmentHandle = null;
-        homeFragmentHandle = null;
-        navigationFragmentHandle = null;
-        settingFragmentHandle = null;
+        fragmentTransaction = fragmentManager.beginTransaction();
+        if(carFragment!=null)
+        fragmentTransaction.hide(carFragment);
+        if(navigationFragment!=null)
+        fragmentTransaction.hide(navigationFragment);
+        if(dashBoardFragment!=null)
+        fragmentTransaction.hide(dashBoardFragment);
+        fragmentTransaction.commit();
+
     }
 
     private void linkBluetooth(){
@@ -229,6 +264,7 @@ public class MainActivity extends AppCompatActivity {
         /*****连接MQTT信息*****/
         Intent mqttServiceIntent = new Intent(this, MqttService.class);
         bindService(mqttServiceIntent, mqttServiceConnection, BIND_AUTO_CREATE);
+        mqttService = MqttService.getMqttService();
     }
 
     /*****蓝牙部分*****/
@@ -285,9 +321,8 @@ public class MainActivity extends AppCompatActivity {
             DecimalFormat df   = new DecimalFormat("######0.00");
 
             double temp= OBDCProtocol.Mode01_calculate(command,a,b,0);
-
-            Bundle bundle = new Bundle();
             String sum=df.format(temp);
+
             switch (command){
                 case "05":{
                     sendCarData = new CarData(command,sum,"°C");
@@ -326,14 +361,32 @@ public class MainActivity extends AppCompatActivity {
                 }
                 default:break;
             }
-            bundle.putSerializable(AppSetting.LOG_DASHBOARD_FRAGMENT_TAG,sendCarData);
-            Message message = new Message();
-            message.what = AppSetting.MESSAGE_DASHBOARD_FRAGMENT_KEY;
-            message.setData(bundle);
-            if(dashBoardFragmentHandle!=null)
-                dashBoardFragmentHandle.handleMessage(message);
+
+            String json = gson.toJson(sendCarData);
+            if(mqttService!=null)
+                mqttService.sendOrder("Test",json);
+            else
+                mqttService = MqttService.getMqttService();
+
+            CarData tempCarData = carDataMap.get(sendCarData.getCommand());
+            if(tempCarData!=null)
+                tempCarData.setData(sendCarData.getData());
+            else {
+                carDataList.add(sendCarData);
+                carDataMap.put(sendCarData.getCommand(),sendCarData);
+            }
+
+            if(postion ==2){
+                dashBoardFragment.refeshList();
+            }
+
         }
     }
+
+    public List<CarData> getCarDataList() {
+        return carDataList;
+    }
+
 
     private class UiHandle extends Handler {
         @Override

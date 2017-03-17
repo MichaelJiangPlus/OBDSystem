@@ -6,10 +6,10 @@ package me.michaeljiang.obdsystem.util;
 
 public class AppSetting {
     /*****MQTT常量*****/
-    public final static String MQTT_HOST = "thingworx.zucc.edu.cn";
+    public final static String MQTT_HOST = "192.168.1.249";
     public final static String MQTT_PORT = "1883";
-    public final static String MQTT_USERID = "jiangzhanxiang";
-    public final static String MQTT_PASSWORD = "KLSFDJW9203";
+    public final static String MQTT_USERID = "";
+    public final static String MQTT_PASSWORD = "";
 
 
     /*****TAG常量*****/
@@ -56,8 +56,6 @@ public class AppSetting {
     /*****蓝牙部分*****/
     public static final String BLUETOOTH_DEVICE_NAME = "DEVICE_NAME";
     public static final String BLUETOOTH_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-
-
 
 
 }

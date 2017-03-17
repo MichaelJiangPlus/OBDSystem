@@ -6,10 +6,12 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import android.view.Window;
@@ -19,7 +21,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import me.michaeljiang.obdsystem.model.LeDeviceListAdapter;
+import me.michaeljiang.obdsystem.adapter.LeDeviceListAdapter;
 import me.michaeljiang.obdsystem.util.AppSetting;
 
 public class DeviceState extends AppCompatActivity {
@@ -33,16 +35,33 @@ public class DeviceState extends AppCompatActivity {
     private LeDeviceListAdapter mLeDeviceListAdapter;
     private BluetoothAdapter mBluetoothAdapter;
 
+    private SharedPreferences preferences ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //无title
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        try {
+            preferences = getSharedPreferences("data" ,MODE_PRIVATE);
+            if(preferences!=null){
+                String address = preferences.getString(AppSetting.BLUETOOTH_DEVICE_ADDRESS,"");
+                String name = preferences.getString(AppSetting.BLUETOOTH_DEVICE_NAME,"");
+                if(!address.equals("")){
+                    final Intent intent = new Intent(DeviceState.this, MainActivity.class);
+                    intent.putExtra(AppSetting.BLUETOOTH_DEVICE_NAME, name);
+                    intent.putExtra(AppSetting.BLUETOOTH_DEVICE_ADDRESS, address);
+                    Log.d("SaveData",name);
+                    Log.d("SaveData",address);
+                    startActivity(intent);
+                }
+            }
+        }
+        catch (Exception e){
+            Log.d("SaveData","ERROR");
+        }
 
-        //全屏
-        getWindow().setFlags(WindowManager.LayoutParams. FLAG_FULLSCREEN , WindowManager.LayoutParams. FLAG_FULLSCREEN);
+
+
         setContentView(R.layout.activity_device_state);
 
         //控件初始化
@@ -86,6 +105,13 @@ public class DeviceState extends AppCompatActivity {
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     mScanning = false;
                 }
+
+                //跳转前先存储
+                SharedPreferences.Editor editor = getSharedPreferences("data",MODE_PRIVATE).edit();
+                editor.putString(AppSetting.BLUETOOTH_DEVICE_ADDRESS,device.getAddress());
+                editor.putString(AppSetting.BLUETOOTH_DEVICE_NAME,device.getName());
+                editor.commit();
+                Log.d("SaveData","SaveSuccess");
                 startActivity(intent);
             }
         });

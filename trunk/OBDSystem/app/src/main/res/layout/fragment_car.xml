@@ -8,13 +8,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView
-            android:text="DefaultFragment"
-            android:layout_width="wrap_content"
+        <Button
+            android:text="重新激活"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:id="@+id/btn_link"
             android:layout_centerVertical="true"
-            android:layout_centerHorizontal="true"
-            android:id="@+id/txt_info" />
+            android:layout_alignParentStart="true" />
+
     </RelativeLayout>
 
 </FrameLayout>

@@ -7,7 +7,7 @@
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="35dp"
+        android:layout_height="50dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true">
 
@@ -16,11 +16,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/txt_info"
-            android:paddingLeft="20dp"
+            android:paddingLeft="10dp"
             android:layout_gravity="center"
             android:gravity="left"
-            android:textColor="#FFFFFF"
-            android:textSize="20dp"
+            android:textSize="25dp"
             android:layout_weight="0.5" />
 
         <TextView
@@ -29,8 +28,7 @@
             android:layout_gravity="center"
             android:id="@+id/txt_describe"
             android:gravity="left"
-            android:textColor="#FFFFFF"
-            android:textSize="20dp"
+            android:textSize="25dp"
             android:layout_weight="0.9" />
 
     </LinearLayout>
