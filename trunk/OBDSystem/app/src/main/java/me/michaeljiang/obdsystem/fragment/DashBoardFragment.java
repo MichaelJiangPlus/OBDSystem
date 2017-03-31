@@ -15,6 +15,8 @@ import me.michaeljiang.obdsystem.adapter.CarDataAdapter;
 public class DashBoardFragment extends ListFragment {
     private View view;
     private Handler uiHangle;
+    private CarDataAdapter carDataAdapter;
+    private MainActivity mainActivity;
     public static DashBoardFragment newInstance(String param1) {
         DashBoardFragment fragment = new DashBoardFragment();
         return fragment;
@@ -38,14 +40,12 @@ public class DashBoardFragment extends ListFragment {
     }
 
     private void initList(){
-        carDataAdapter = new CarDataAdapter(mainActivity, mainActivity.getCarDataList() );
+        carDataAdapter = new CarDataAdapter(mainActivity, mainActivity.getCarDataList());
         setListAdapter(carDataAdapter);
     }
 
     public void refeshList(){
         carDataAdapter.notifyDataSetChanged();
     }
-
-
 
 }

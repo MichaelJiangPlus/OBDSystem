@@ -236,7 +236,7 @@ void ISO14230_4Setting(KLINETabTypeDef *tab,u32 Baud)
 	}
 	else if (CotrolVale == SYSDS)
 	{
-	  Num = GetDSNumber(&ATCmd[6],&err);
+	  Num = GetDSNumber(&ATCmd[6],&err);//获取现在命令的编号
 	  if (err == ERR0)
 	  {
 	    printf(STR000);
@@ -250,14 +250,14 @@ void ISO14230_4Setting(KLINETabTypeDef *tab,u32 Baud)
 	  {
 	    for (i = 0; i < DSControl14230[Num].ByteNum;i++)	
 	    {
-		  Count = tab->KTXCMD[DSControl14230[Num].Y].data[DSControl14230[Num].X + i];
+		  Count = tab->KTXCMD[DSControl14230[Num].Y].data[DSControl14230[Num].X + i];//先从K线中取出Count值，然后在SetDSRAM中进行修改
 	    }
 		DSOLDNUM = Num;
 	  }
-	  err = SetDSRAM(ATCmd,DSControl14230,DSRAM);
+	  err = SetDSRAM(ATCmd,DSControl14230,DSRAM);//根据收到的是UP还是Down处理数据，增加或者减小数据
 	  if (err == ERR0)
 	  {
-        printf(STR000);
+      printf(STR000);
 	    printf(STR009);
 		printf("\"\r\n");
 		CotrolVale = SYSXX;
@@ -276,9 +276,12 @@ void ISO14230_4Setting(KLINETabTypeDef *tab,u32 Baud)
 	    ClearRAM((u8*)DSRAM,2);
 		continue;
 	  }
+		
 	  for (i = 0; i < DSControl14230[Num].ByteNum;i++)	
 	  {
+			//将受到的两个数值直接塞进Kan线，然后发送
 		tab->KTXCMD[DSControl14230[Num].Y].data[DSControl14230[Num].X + i] = DSRAM[i];
+			
 	  }
 	  CotrolVale = SYSXX;
 	  ClearRAM((u8*)ATCmd,100);

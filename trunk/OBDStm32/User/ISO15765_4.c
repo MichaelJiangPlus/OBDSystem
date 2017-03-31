@@ -562,6 +562,25 @@ ERRORType SetDSRAM(__IO u8 *cmd,const DSControlTypeDef *Controltab,u8 *p)
 		 }
 	   }
 	}
+	//没错就是在这里使用的Fake自定义函数，即可做到自动的修改数组，如果收到的内容是Fake的话 可以愉快的玩耍AT+SDS048:Fake这种
+	else if(!strncmp((const char *)&cmd[10],"Fake",2)){
+			Count = 100;
+	   if (Controltab[Num].ByteNum == 1)
+	   {
+	      if (Count == 256)
+		  {
+		    Count = 0;
+		  }
+	   }
+	   else
+	   {
+	     if (Count == 65536)
+		 {
+		   Count = 0;
+		 }
+	   }
+	
+	}
 	else
 	{
 	  return  ERR0;
@@ -572,8 +591,9 @@ ERRORType SetDSRAM(__IO u8 *cmd,const DSControlTypeDef *Controltab,u8 *p)
 	   p[Controltab[Num].ByteNum - i - 1] = *sp;
 	 }
      printf(Controltab[Num].str);
+	 //最终输出数据存放在Controltab[Num].Equation0
 	 if (Controltab[Num].Format[strlen(Controltab[Num].Format)-1]  == 'f')
-     {
+   {
 	   printf(Controltab[Num].Format,Controltab[Num].Equation0((float)Count));
 	 }
 	 else
